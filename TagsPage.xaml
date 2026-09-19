@@ -54,20 +54,12 @@
                 SelectionMode="None">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="local:FileTagItem">
-                        <Grid Margin="0,6">
+                        <Grid Margin="0,6" DoubleTapped="FileItem_DoubleTapped">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-
-                            <Image
-            Grid.Column="0"
-            Source="{x:Bind Icon, Mode=OneWay}"
-            Width="24"
-            Height="24"
-            Margin="0,2,10,0"
-            VerticalAlignment="Top"/>
-
+                            <Image Grid.Column="0" Source="{x:Bind Icon, Mode=OneWay}" Width="24" Height="24" Margin="0,2,10,0" VerticalAlignment="Top"/>
                             <StackPanel Grid.Column="1">
                                 <TextBlock
                 Text="{x:Bind FileName}"

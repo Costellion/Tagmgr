@@ -39,7 +39,7 @@
 
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:FileTagItem">
-                    <Grid Margin="0,6">
+                    <Grid Margin="0,6" DoubleTapped="FileItem_DoubleTapped">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
@@ -47,12 +47,12 @@
 
                         <!-- 文件图标 -->
                         <Image
-                    Grid.Column="0"
-                    Source="{x:Bind Icon, Mode=OneWay}"
-                    Width="24"
-                    Height="24"
-                    Margin="0,2,10,0"
-                    VerticalAlignment="Top"/>
+                            Grid.Column="0"
+                            Source="{x:Bind Icon, Mode=OneWay}"
+                            Width="24"
+                            Height="24"
+                            Margin="0,2,10,0"
+                        VerticalAlignment="Top"/>
 
                         <!-- 文件信息 + 标签 -->
                         <StackPanel Grid.Column="1">

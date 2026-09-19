@@ -27,7 +27,7 @@
             </StackPanel>
 
             <TextBlock
-                Text="版本 0.0.2"
+                Text="Build 0.0.3(20260919+3) by Costellion"
                 Foreground="Gray"/>
 
             <TextBlock
@@ -48,7 +48,7 @@
             </StackPanel>
 
             <TextBlock
-                Text="技术栈"
+                Text="技术说明"
                 FontSize="18"
                 FontWeight="SemiBold"
                 Margin="0,8,0,0"/>

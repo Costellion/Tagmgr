@@ -1,8 +1,13 @@
-using System.Collections.Generic;
-using System.Linq;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Navigation;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Windows.Storage;
+using Windows.System;
 
 namespace Tagmgr
 {
@@ -64,6 +69,38 @@ namespace Tagmgr
             FilteredFileListView.ItemsSource = filtered;
             FilteredFileListView.Visibility = Visibility.Visible;
             EmptyHint.Visibility = Visibility.Collapsed;
+        }
+
+        // 双击文件项打开文件
+        private async void FileItem_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+        {
+            if (sender is not FrameworkElement fe) return;
+            if (fe.DataContext is not FileTagItem item) return;
+            try
+            {
+                var file = await StorageFile.GetFileFromPathAsync(item.FilePath);
+                var ok = await Launcher.LaunchFileAsync(file);
+
+                if (!ok)
+                    await ShowMessageAsync("系统没有可用来打开该文件的程序。");
+            }
+            catch (Exception ex)
+            {
+                await ShowMessageAsync(
+                    $"无法打开文件：{ex.Message}\n路径：{item.FilePath}");
+            }
+        }
+        // 简单提示框
+        private async Task ShowMessageAsync(string message)
+        {
+            var dialog = new ContentDialog
+            {
+                Title = "提示",
+                Content = message,
+                CloseButtonText = "确定",
+                XamlRoot = this.XamlRoot
+            };
+            await dialog.ShowAsync();
         }
     }
 }

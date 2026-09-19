@@ -1,11 +1,14 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using Windows.Storage;
 using Windows.Storage.Pickers;
+using Windows.System;
 
 namespace Tagmgr
 {
@@ -92,6 +95,7 @@ namespace Tagmgr
             await DataService.SaveAsync();
         }
 
+        //移除标签
         private async void RemoveTag_Click(object sender, RoutedEventArgs e)
         {
             var selected = FileListView.SelectedItems
@@ -113,6 +117,7 @@ namespace Tagmgr
             TagInput.Text = "";
             await DataService.SaveAsync();
         }
+        //移除单个标签
         private async void RemoveTagChip_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not Button btn) return;
@@ -132,6 +137,7 @@ namespace Tagmgr
             if (item.Tags.Remove(tag))
                 await DataService.SaveAsync();
         }
+        //移除选中文件
         private async void DeleteFile_Click(object sender, RoutedEventArgs e)
         {
             // 先复制一份，避免遍历时修改集合
@@ -146,7 +152,25 @@ namespace Tagmgr
 
             await DataService.SaveAsync();
         }
+        // 双击文件项打开文件
+        private async void FileItem_DoubleTapped(object sender,DoubleTappedRoutedEventArgs e)
+        {
+            if (sender is not FrameworkElement fe) return;
+            if (fe.DataContext is not FileTagItem item) return;
+            try
+            {
+                var file = await StorageFile.GetFileFromPathAsync(item.FilePath);
+                var ok = await Launcher.LaunchFileAsync(file);
 
+                if (!ok)
+                    await ShowMessageAsync("系统没有可用来打开该文件的程序。");
+            }
+            catch (Exception ex)
+            {
+                await ShowMessageAsync(
+                    $"无法打开文件：{ex.Message}\n路径：{item.FilePath}");
+            }
+        }
         // 简单提示框
         private async Task ShowMessageAsync(string message)
         {
