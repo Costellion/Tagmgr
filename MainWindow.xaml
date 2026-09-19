@@ -13,111 +13,35 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid x:Name="RootGrid" Loaded="RootGrid_Loaded">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="2*"/>
-            <ColumnDefinition Width="1*"/>
-        </Grid.ColumnDefinitions>
+    <NavigationView
+        x:Name="NavView"
+        PaneTitle="Tagmgr"
+        PaneDisplayMode="Left"
+        OpenPaneLength="220"
+        IsBackButtonVisible="Collapsed"
+        IsSettingsVisible="False"
+        SelectionChanged="NavView_SelectionChanged">
 
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+        <NavigationView.MenuItems>
+            <NavigationViewItem Content="所有文件" Tag="files">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE8A5;"/>
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
 
-        <!-- 顶部标题 -->
-        <TextBlock
-            Grid.Row="0"
-            Grid.ColumnSpan="2"
-            Text="  TagManager 文件标签管理器"
-            FontSize="20"
-            Margin="10"/>
+            <NavigationViewItem Content="按标签查看" Tag="tags">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE8EC;"/>
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
 
-        <!-- 左侧：文件列表 -->
-        <ListView
-            x:Name="FileListView"
-            Grid.Row="1"
-            Grid.Column="0"
-            Margin="10"
-            SelectionMode="Single"
-            ItemsSource="{x:Bind FileItems}">
+            <NavigationViewItem Content="关于" Tag="about">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE946;"/>
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+        </NavigationView.MenuItems>
 
-            <ListView.ItemTemplate>
-                <DataTemplate x:DataType="local:FileTagItem">
-                    <StackPanel Margin="0,4">
-                        <!-- 文件名 -->
-                        <TextBlock
-                            Text="{x:Bind FileName}"
-                            FontWeight="Bold"/>
-
-                        <!-- 文件路径 -->
-                        <TextBlock
-                            Text="{x:Bind FilePath}"
-                            Foreground="Gray"
-                            FontSize="12"
-                            TextTrimming="CharacterEllipsis"/>
-
-                        <!-- 标签列表 -->
-                        <ItemsControl
-                            ItemsSource="{x:Bind Tags}"
-                            Margin="0,4,0,0">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal"/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border
-                                        Background="LightGray"
-                                        CornerRadius="4"
-                                        Margin="2"
-                                        Padding="4,2">
-                                        <TextBlock Text="{Binding}"/>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-                </DataTemplate>
-            </ListView.ItemTemplate>
-        </ListView>
-
-        <!-- 右侧：操作区 -->
-        <StackPanel
-            Grid.Row="1"
-            Grid.Column="1"
-            Margin="10"
-            Spacing="10">
-
-            <Button
-                Content="选择文件..."
-                Click="PickFile_Click"/>
-
-            <TextBox
-                x:Name="TagInput"
-                PlaceholderText="输入标签，例如：工作"/>
-
-            <Button
-                Content="给选中文件添加标签"
-                Click="AddTag_Click"/>
-
-            <Button
-                Content="从选中文件移除标签"
-                Click="RemoveTag_Click"/>
-
-            <Button
-                Content="删除选中文件记录"
-                Click="DeleteFile_Click"/>
-
-            <Button
-                Content="关于"
-                Click="About_Click"/>
-
-            <TextBlock
-                Text="提示：先在左侧选中一个文件，再添加或移除标签。"
-                TextWrapping="Wrap"
-                Foreground="Gray"/>
-        </StackPanel>
-    </Grid>
+        <Frame x:Name="ContentFrame"/>
+    </NavigationView>
 </Window>
