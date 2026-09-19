@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Tagmgr (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "Tagmgr (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
