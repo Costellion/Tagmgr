@@ -41,8 +41,21 @@
 
         <!-- 右侧：过滤后的文件 -->
         <Grid Grid.Column="1" Padding="8,12,16,12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <!-- 搜索框 -->
+            <AutoSuggestBox
+                x:Name="SearchBox"
+                Grid.Row="0"
+                Margin="0,0,0,12"
+                PlaceholderText="搜索文件名、路径或标签..."
+                QueryIcon="Find"
+                TextChanged="SearchBox_TextChanged"/>
             <TextBlock
                 x:Name="EmptyHint"
+                Grid.Row="1"
                 Text="请从左侧选择一个标签，查看相关文件"
                 Foreground="Gray"
                 HorizontalAlignment="Center"
@@ -50,6 +63,7 @@
 
             <ListView
                 x:Name="FilteredFileListView"
+                Grid.Row="1"
                 Visibility="Collapsed"
                 SelectionMode="None">
                 <ListView.ItemTemplate>
