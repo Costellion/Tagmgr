@@ -3,7 +3,9 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.Storage;
@@ -16,19 +18,74 @@ namespace Tagmgr
     {
         // 指向 DataService 的共享集合
         public ObservableCollection<FileTagItem> FileItems => DataService.FileItems;
-
+        public ObservableCollection<FileTagItem> DisplayItems { get; } = new();
         public FilesPage()
         {
             this.InitializeComponent();
         }
+        // 搜索框内容变化
+        private void SearchBox_TextChanged(
+            AutoSuggestBox sender,
+            AutoSuggestBoxTextChangedEventArgs args)
+        {
+            // 只处理用户输入，忽略程序赋值
+            if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput)
+                return;
 
+            RefreshDisplay();
+        }
+
+        // 按搜索文本重建 DisplayItems
+        private void RefreshDisplay()
+        {
+            var query = SearchBox?.Text?.Trim() ?? "";
+
+            IEnumerable<FileTagItem> source = DataService.FileItems;
+
+            if (!string.IsNullOrEmpty(query))
+            {
+                source = source.Where(f =>
+                    f.FileName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                    f.FilePath.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                    f.Tags.Any(t => t.Contains(query, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            var result = source.ToList();
+
+            // 保留原有选中项
+            var selected = FileListView.SelectedItems
+                .OfType<FileTagItem>()
+                .ToHashSet();
+
+            DisplayItems.Clear();
+            foreach (var item in result)
+                DisplayItems.Add(item);
+
+            // 恢复选中
+            foreach (var item in result)
+            {
+                if (selected.Contains(item))
+                    FileListView.SelectedItems.Add(item);
+            }
+        }
         private async void Page_Loaded(object sender, RoutedEventArgs e)
         {
             await DataService.EnsureLoadedAsync();
 
+            // 订阅共享集合变化，增删时同步刷新显示
+            DataService.FileItems.CollectionChanged -= FileItems_CollectionChanged;
+            DataService.FileItems.CollectionChanged += FileItems_CollectionChanged;
+
             // 为已有记录加载图标
             foreach (var item in FileItems)
                 _ = item.LoadIconAsync();
+
+            RefreshDisplay();
+        }
+
+        private void FileItems_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            RefreshDisplay();
         }
 
         // 选择文件
@@ -93,6 +150,7 @@ namespace Tagmgr
 
             TagInput.Text = "";
             await DataService.SaveAsync();
+            RefreshDisplay();
         }
 
         //移除标签
@@ -116,6 +174,7 @@ namespace Tagmgr
             
             TagInput.Text = "";
             await DataService.SaveAsync();
+            RefreshDisplay();
         }
         //移除单个标签
         private async void RemoveTagChip_Click(object sender, RoutedEventArgs e)
@@ -136,6 +195,7 @@ namespace Tagmgr
 
             if (item.Tags.Remove(tag))
                 await DataService.SaveAsync();
+            RefreshDisplay();
         }
         //移除选中文件
         private async void DeleteFile_Click(object sender, RoutedEventArgs e)
@@ -151,6 +211,7 @@ namespace Tagmgr
                 FileItems.Remove(item);
 
             await DataService.SaveAsync();
+            RefreshDisplay();
         }
         // 双击文件项打开文件
         private async void FileItem_DoubleTapped(object sender,DoubleTappedRoutedEventArgs e)
