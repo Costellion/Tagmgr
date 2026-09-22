@@ -29,14 +29,31 @@
             FontWeight="SemiBold"
             Margin="16,12"/>
         <!-- 搜索框 -->
-        <AutoSuggestBox
+        <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="16,0,16,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <AutoSuggestBox
             x:Name="SearchBox"
-            Grid.Row="1"
-            Grid.ColumnSpan="2"
-            Margin="16,0,16,8"
+            Grid.Column="0"
             PlaceholderText="搜索文件名、路径或标签..."
             QueryIcon="Find"
             TextChanged="SearchBox_TextChanged"/>
+
+            <ComboBox
+            x:Name="SortComboBox"
+            Grid.Column="1"
+            Margin="8,0,0,0"
+            MinWidth="170"
+            SelectionChanged="SortComboBox_SelectionChanged">
+                <ComboBoxItem Content="名称 A-Z" Tag="NameAsc"/>
+                <ComboBoxItem Content="名称 Z-A" Tag="NameDesc"/>
+                <ComboBoxItem Content="修改时间（新→旧）" Tag="ModifiedDesc"/>
+                <ComboBoxItem Content="修改时间（旧→新）" Tag="ModifiedAsc"/>
+            </ComboBox>
+        </Grid>
         <!-- 左侧：文件列表 -->
         <ListView
             x:Name="FileListView"

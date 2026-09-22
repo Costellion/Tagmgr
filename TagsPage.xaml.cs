@@ -26,7 +26,7 @@ namespace Tagmgr
 
             // 确保所有文件图标已加载
             foreach (var item in DataService.FileItems)
-                _ = item.LoadIconAsync();
+                _ = item.LoadMetadataAsync();
 
             // 重建标签列表
             var tags = DataService.FileItems

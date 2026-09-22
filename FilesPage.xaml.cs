@@ -19,23 +19,24 @@ namespace Tagmgr
         // 指向 DataService 的共享集合
         public ObservableCollection<FileTagItem> FileItems => DataService.FileItems;
         public ObservableCollection<FileTagItem> DisplayItems { get; } = new();
+        private FileSortMode CurrentSortMode
+        {
+            get
+            {
+                if (SortComboBox?.SelectedItem is ComboBoxItem item &&
+                    item.Tag is string tag &&
+                    Enum.TryParse<FileSortMode>(tag, out var mode))
+                    return mode;
+
+                return FileSortMode.NameAsc;
+            }
+        }
         public FilesPage()
         {
             this.InitializeComponent();
+            SortComboBox.SelectedIndex = 0;
         }
-        // 搜索框内容变化
-        private void SearchBox_TextChanged(
-            AutoSuggestBox sender,
-            AutoSuggestBoxTextChangedEventArgs args)
-        {
-            // 只处理用户输入，忽略程序赋值
-            if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput)
-                return;
-
-            RefreshDisplay();
-        }
-
-        // 按搜索文本重建 DisplayItems
+        // 按搜索文本+ 排序方式重建 DisplayItems
         private void RefreshDisplay()
         {
             var query = SearchBox?.Text?.Trim() ?? "";
@@ -49,7 +50,7 @@ namespace Tagmgr
                     f.FilePath.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                     f.Tags.Any(t => t.Contains(query, StringComparison.OrdinalIgnoreCase)));
             }
-
+            source = DataService.ApplySort(source, CurrentSortMode);
             var result = source.ToList();
 
             // 保留原有选中项
@@ -77,8 +78,11 @@ namespace Tagmgr
             DataService.FileItems.CollectionChanged += FileItems_CollectionChanged;
 
             // 为已有记录加载图标
-            foreach (var item in FileItems)
-                _ = item.LoadIconAsync();
+            var tasks = FileItems
+                 .Select(item => item.LoadMetadataAsync())
+                 .ToList();
+
+            await Task.WhenAll(tasks);
 
             RefreshDisplay();
         }
@@ -103,6 +107,8 @@ namespace Tagmgr
             var files = await picker.PickMultipleFilesAsync();
             if (files == null) return;
 
+            var newItems = new List<FileTagItem>();
+
             foreach (var file in files)
             {
                 if (FileItems.Any(x => x.FilePath == file.Path))
@@ -110,14 +116,33 @@ namespace Tagmgr
 
                 var item = new FileTagItem { FilePath = file.Path };
                 FileItems.Add(item);
-
-                // 异步加载图标，不阻塞界面
-                _ = item.LoadIconAsync();
+                newItems.Add(item);
             }
 
+            // 加载新文件的元数据，加载完后再刷新一次排序
+            await Task.WhenAll(newItems.Select(i => i.LoadMetadataAsync()));
+
+            RefreshDisplay();
             await DataService.SaveAsync();
         }
+        // 排序方式切换
+        private void SortComboBox_SelectionChanged(
+            object sender,
+            SelectionChangedEventArgs e)
+        {
+            RefreshDisplay();
+        }
+        // 搜索框内容变化
+        private void SearchBox_TextChanged(
+            AutoSuggestBox sender,
+            AutoSuggestBoxTextChangedEventArgs args)
+        {
+            // 只处理用户输入，忽略程序赋值
+            if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput)
+                return;
 
+            RefreshDisplay();
+        }
         // 获取当前窗口（用于 FileOpenPicker 初始化）
         private Window GetWindow()
         {
@@ -211,7 +236,7 @@ namespace Tagmgr
                 FileItems.Remove(item);
 
             await DataService.SaveAsync();
-            RefreshDisplay();
+            //RefreshDisplay();
         }
         // 双击文件项打开文件
         private async void FileItem_DoubleTapped(object sender,DoubleTappedRoutedEventArgs e)

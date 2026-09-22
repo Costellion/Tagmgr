@@ -27,7 +27,7 @@
             </StackPanel>
 
             <TextBlock
-                Text="Build 0.0.4(20260920+1) by Costellion"
+                Text="Build 0.0.5(20260922+1) by Costellion"
                 Foreground="Gray"/>
 
             <TextBlock
@@ -44,7 +44,7 @@
                 <TextBlock Text="• 给任意本地文件添加多个标签"/>
                 <TextBlock Text="• 支持多选文件，一键批量添加/移除标签"/>
                 <TextBlock Text="• 按多个标签交集筛选文件"/>
-                <TextBlock Text="• 搜索文件"/>
+                <TextBlock Text="• 搜索文件/给文件排序"/>
                 <TextBlock Text="• 标签数据保存在本地，不上传任何信息"/>
             </StackPanel>
 

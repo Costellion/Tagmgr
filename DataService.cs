@@ -2,11 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Tagmgr
 {
+    public enum FileSortMode
+    {
+        NameAsc,        // 名称 A-Z
+        NameDesc,       // 名称 Z-A
+        ModifiedDesc,   // 修改时间 新 → 旧
+        ModifiedAsc     // 修改时间 旧 → 新
+    }
     public static class DataService
     {
         // 全局唯一的文件记录集合，两个页面共享同一实例
@@ -61,6 +69,28 @@ namespace Tagmgr
             {
                 System.Diagnostics.Debug.WriteLine($"保存数据失败: {ex.Message}");
             }
+        }
+    public static IEnumerable<FileTagItem> ApplySort(
+    IEnumerable<FileTagItem> source,
+    FileSortMode mode)
+        {
+            return mode switch
+            {
+                FileSortMode.NameAsc => source
+                    .OrderBy(f => f.FileName, StringComparer.OrdinalIgnoreCase),
+
+                FileSortMode.NameDesc => source
+                    .OrderByDescending(f => f.FileName, StringComparer.OrdinalIgnoreCase),
+
+                // 修改时间为空（还没加载出来或读取失败）的排最后
+                FileSortMode.ModifiedDesc => source
+                    .OrderByDescending(f => f.ModifiedTime ?? DateTimeOffset.MinValue),
+
+                FileSortMode.ModifiedAsc => source
+                    .OrderBy(f => f.ModifiedTime ?? DateTimeOffset.MaxValue),
+
+                _ => source
+            };
         }
     }
 }
