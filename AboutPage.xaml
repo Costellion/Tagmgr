@@ -27,7 +27,7 @@
             </StackPanel>
 
             <TextBlock
-                Text="Build 0.0.5(20260922+1) by Costellion"
+                Text="Build 0.0.5(20260922+2) by Costellion"
                 Foreground="Gray"/>
 
             <TextBlock

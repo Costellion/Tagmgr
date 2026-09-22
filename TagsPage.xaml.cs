@@ -13,9 +13,26 @@ namespace Tagmgr
 {
     public sealed partial class TagsPage : Page
     {
+        // 当前排序方式
+        private FileSortMode CurrentSortMode
+        {
+            get
+            {
+                if (SortComboBox?.SelectedItem is ComboBoxItem item &&
+                    item.Tag is string tag &&
+                    Enum.TryParse<FileSortMode>(tag, out var mode))
+                    return mode;
+
+                return FileSortMode.NameAsc;
+            }
+        }
+
         public TagsPage()
         {
             this.InitializeComponent();
+
+            // 设置默认排序
+            SortComboBox.SelectedIndex = 0;
         }
 
         protected override async void OnNavigatedTo(NavigationEventArgs e)
@@ -24,9 +41,12 @@ namespace Tagmgr
 
             await DataService.EnsureLoadedAsync();
 
-            // 确保所有文件图标已加载
-            foreach (var item in DataService.FileItems)
-                _ = item.LoadMetadataAsync();
+            // 确保所有文件的元数据（图标 + 修改时间）已加载
+            var tasks = DataService.FileItems
+                .Select(item => item.LoadMetadataAsync())
+                .ToList();
+
+            await Task.WhenAll(tasks);
 
             // 重建标签列表
             var tags = DataService.FileItems
@@ -56,6 +76,14 @@ namespace Tagmgr
             RefreshFilteredFiles();
         }
 
+        // 排序方式切换
+        private void SortComboBox_SelectionChanged(
+            object sender,
+            SelectionChangedEventArgs e)
+        {
+            RefreshFilteredFiles();
+        }
+
         // 标签选择变化
         private void TagListView_SelectionChanged(
             object sender,
@@ -64,7 +92,7 @@ namespace Tagmgr
             RefreshFilteredFiles();
         }
 
-        // 根据已选标签 + 搜索文本重建结果列表
+        // 根据已选标签 + 搜索文本 + 排序方式重建结果列表
         private void RefreshFilteredFiles()
         {
             var selectedTags = TagListView.SelectedItems
@@ -78,6 +106,7 @@ namespace Tagmgr
             {
                 FilteredFileListView.ItemsSource = null;
                 FilteredFileListView.Visibility = Visibility.Collapsed;
+                EmptyHint.Text = "请从左侧选择一个或多个标签，查看同时拥有这些标签的文件（双击可打开）";
                 EmptyHint.Visibility = Visibility.Visible;
                 return;
             }
@@ -97,11 +126,13 @@ namespace Tagmgr
                     f.Tags.Any(t => t.Contains(query, StringComparison.OrdinalIgnoreCase)));
             }
 
+            // 应用排序
+            source = DataService.ApplySort(source, CurrentSortMode);
+
             var result = source.ToList();
 
             FilteredFileListView.ItemsSource = result;
 
-            // 有结果才显示列表；无结果显示空状态
             if (result.Count == 0)
             {
                 FilteredFileListView.Visibility = Visibility.Collapsed;
@@ -120,6 +151,7 @@ namespace Tagmgr
         {
             if (sender is not FrameworkElement fe) return;
             if (fe.DataContext is not FileTagItem item) return;
+
             try
             {
                 var file = await StorageFile.GetFileFromPathAsync(item.FilePath);

@@ -45,14 +45,31 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <!-- 搜索框 -->
-            <AutoSuggestBox
-                x:Name="SearchBox"
-                Grid.Row="0"
-                Margin="0,0,0,12"
-                PlaceholderText="搜索文件名、路径或标签..."
-                QueryIcon="Find"
-                TextChanged="SearchBox_TextChanged"/>
+            
+            <Grid Grid.Row="0" Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <AutoSuggestBox
+                    x:Name="SearchBox"
+                    Grid.Column="0"
+                    PlaceholderText="在结果中搜索文件名、路径或标签..."
+                    QueryIcon="Find"
+                    TextChanged="SearchBox_TextChanged"/>
+                <ComboBox
+                    x:Name="SortComboBox"
+                    Grid.Column="1"
+                    Margin="8,0,0,0"
+                    MinWidth="170"
+                    SelectionChanged="SortComboBox_SelectionChanged">
+                    <ComboBoxItem Content="名称 A-Z" Tag="NameAsc"/>
+                    <ComboBoxItem Content="名称 Z-A" Tag="NameDesc"/>
+                    <ComboBoxItem Content="修改时间（新→旧）" Tag="ModifiedDesc"/>
+                    <ComboBoxItem Content="修改时间（旧→新）" Tag="ModifiedAsc"/>
+                </ComboBox>
+            </Grid>
             <TextBlock
                 x:Name="EmptyHint"
                 Grid.Row="1"
