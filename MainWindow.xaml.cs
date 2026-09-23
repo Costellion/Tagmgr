@@ -27,12 +27,12 @@ namespace Tagmgr
         public MainWindow()
         {
             this.InitializeComponent();
-
+            this.AppWindow.SetIcon("Assets/Tagmgr.ico");
             // 默认选中第一项并显示“所有文件”页
             NavView.SelectedItem = NavView.MenuItems[0];
             ContentFrame.Navigate(typeof(FilesPage));
         }
-
+        
         private void NavView_SelectionChanged(
             NavigationView sender,
             NavigationViewSelectionChangedEventArgs args)

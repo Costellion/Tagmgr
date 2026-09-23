@@ -13,7 +13,68 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Content Remove="Assets\BadgeLogo.scale-100.png" />
+    <Content Remove="Assets\BadgeLogo.scale-125.png" />
+    <Content Remove="Assets\BadgeLogo.scale-150.png" />
+    <Content Remove="Assets\BadgeLogo.scale-200.png" />
+    <Content Remove="Assets\BadgeLogo.scale-400.png" />
+    <Content Remove="Assets\Logo\TagMgrLogo.altform-lightunplated_targetsize-16.png" />
+    <Content Remove="Assets\Logo\TagMgrLogo.altform-lightunplated_targetsize-24.png" />
+    <Content Remove="Assets\Logo\TagMgrLogo.altform-lightunplated_targetsize-256.png" />
+    <Content Remove="Assets\Logo\TagMgrLogo.altform-lightunplated_targetsize-32.png" />
+    <Content Remove="Assets\Logo\TagMgrLogo.altform-lightunplated_targetsize-48.png" />
+    <Content Remove="Assets\Logo\TagMgrLogo.altform-unplated_targetsize-16.png" />
+    <Content Remove="Assets\Logo\TagMgrLogo.altform-unplated_targetsize-24.png" />
+    <Content Remove="Assets\Logo\TagMgrLogo.altform-unplated_targetsize-256.png" />
+    <Content Remove="Assets\Logo\TagMgrLogo.altform-unplated_targetsize-32.png" />
+    <Content Remove="Assets\Logo\TagMgrLogo.altform-unplated_targetsize-48.png" />
+    <Content Remove="Assets\TagMgrLogo.altform-lightunplated_targetsize-16.png" />
+    <Content Remove="Assets\TagMgrLogo.altform-lightunplated_targetsize-24.png" />
+    <Content Remove="Assets\TagMgrLogo.altform-lightunplated_targetsize-256.png" />
+    <Content Remove="Assets\TagMgrLogo.altform-lightunplated_targetsize-32.png" />
+    <Content Remove="Assets\TagMgrLogo.altform-lightunplated_targetsize-48.png" />
+    <Content Remove="Assets\TagMgrLogo.altform-unplated_targetsize-16.png" />
+    <Content Remove="Assets\TagMgrLogo.altform-unplated_targetsize-24.png" />
+    <Content Remove="Assets\TagMgrLogo.altform-unplated_targetsize-256.png" />
+    <Content Remove="Assets\TagMgrLogo.altform-unplated_targetsize-32.png" />
+    <Content Remove="Assets\TagMgrLogo.altform-unplated_targetsize-48.png" />
+  </ItemGroup>
+  <ItemGroup>
     <None Remove="AboutPage.xaml" />
+    <None Remove="Assets\Logo\TagMgrLogo.scale-100.png" />
+    <None Remove="Assets\Logo\TagMgrLogo.scale-125.png" />
+    <None Remove="Assets\Logo\TagMgrLogo.scale-150.png" />
+    <None Remove="Assets\Logo\TagMgrLogo.scale-200.png" />
+    <None Remove="Assets\Logo\TagMgrLogo.scale-400.png" />
+    <None Remove="Assets\Logo\TagMgrLogo.targetsize-16.png" />
+    <None Remove="Assets\Logo\TagMgrLogo.targetsize-16_altform-lightunplated.png" />
+    <None Remove="Assets\Logo\TagMgrLogo.targetsize-24.png" />
+    <None Remove="Assets\Logo\TagMgrLogo.targetsize-24_altform-unplated.png" />
+    <None Remove="Assets\Logo\TagMgrLogo.targetsize-256.png" />
+    <None Remove="Assets\Logo\TagMgrLogo.targetsize-256_altform-unplated.png" />
+    <None Remove="Assets\Logo\TagMgrLogo.targetsize-32.png" />
+    <None Remove="Assets\Logo\TagMgrLogo.targetsize-48.png" />
+    <None Remove="Assets\SplashScreen\SplashScreen.scale-100.png" />
+    <None Remove="Assets\SplashScreen\SplashScreen.scale-125.png" />
+    <None Remove="Assets\SplashScreen\SplashScreen.scale-150.png" />
+    <None Remove="Assets\SplashScreen\SplashScreen.scale-200.png" />
+    <None Remove="Assets\SplashScreen\SplashScreen.scale-400.png" />
+    <None Remove="Assets\StoreLogo\StoreLogo.scale-100.png" />
+    <None Remove="Assets\StoreLogo\StoreLogo.scale-125.png" />
+    <None Remove="Assets\StoreLogo\StoreLogo.scale-150.png" />
+    <None Remove="Assets\StoreLogo\StoreLogo.scale-200.png" />
+    <None Remove="Assets\StoreLogo\StoreLogo.scale-400.png" />
+    <None Remove="Assets\TagMgrLogo.scale-100.png" />
+    <None Remove="Assets\TagMgrLogo.scale-125.png" />
+    <None Remove="Assets\TagMgrLogo.scale-150.png" />
+    <None Remove="Assets\TagMgrLogo.scale-200.png" />
+    <None Remove="Assets\TagMgrLogo.scale-400.png" />
+    <None Remove="Assets\TagMgrLogo.targetsize-16.png" />
+    <None Remove="Assets\TagMgrLogo.targetsize-24.png" />
+    <None Remove="Assets\TagMgrLogo.targetsize-256.png" />
+    <None Remove="Assets\TagMgrLogo.targetsize-256_altform-unplated.png" />
+    <None Remove="Assets\TagMgrLogo.targetsize-32.png" />
+    <None Remove="Assets\TagMgrLogo.targetsize-48.png" />
     <None Remove="TagsPage.xaml" />
   </ItemGroup>
 
@@ -69,5 +130,6 @@
     <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
     <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
     <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
+    <DefaultLanguage>zh-CN</DefaultLanguage>
   </PropertyGroup>
 </Project>

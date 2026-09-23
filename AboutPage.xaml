@@ -15,10 +15,7 @@
             HorizontalAlignment="Left">
 
             <StackPanel Orientation="Horizontal" Spacing="16">
-                <FontIcon
-                    Glyph="&#xE8EC;"
-                    FontSize="36"
-                    Foreground="#0F6CBD"/>
+                <Image Width="256" Source="ms-appx:///Assets/Tagmgr.png" />
                 <TextBlock
                     Text="Tagmgr"
                     FontSize="32"
@@ -27,7 +24,7 @@
             </StackPanel>
 
             <TextBlock
-                Text="Build 0.0.5(20260922+2) by Costellion"
+                Text="Build 0.0.6(20260923+1) by Costellion"
                 Foreground="Gray"/>
 
             <TextBlock
