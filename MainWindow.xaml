@@ -10,7 +10,7 @@
     Title="TagManager">
 
     <Window.SystemBackdrop>
-        <DesktopAcrylicBackdrop/>
+        <MicaBackdrop/>
     </Window.SystemBackdrop>
 
     <NavigationView
