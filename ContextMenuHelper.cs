@@ -46,5 +46,17 @@ namespace Tagmgr
 
             return item;
         }
+        public static MenuFlyout BuildReadOnlyFileMenu()
+        {
+            var menu = new MenuFlyout();
+
+            menu.Items.Add(CreateItem("打开文件", ActionOpen, "\uE8E5"));
+            menu.Items.Add(CreateItem("打开所在文件夹", ActionOpenFolder, "\uE838"));
+            menu.Items.Add(new MenuFlyoutSeparator());
+            menu.Items.Add(CreateItem("复制完整路径", ActionCopyPath, "\uE8C8"));
+            menu.Items.Add(CreateItem("复制文件名", ActionCopyName, "\uE8C8"));
+
+            return menu;
+        }
     }
 }
