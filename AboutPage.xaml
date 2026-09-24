@@ -24,7 +24,7 @@
             </StackPanel>
 
             <TextBlock
-                Text="Build 0.0.8(20260924+3) by Costellion"
+                Text="Build 0.0.9(20260924+4) by Costellion"
                 Foreground="Gray"/>
 
             <TextBlock
@@ -40,6 +40,7 @@
             <StackPanel Spacing="6">
                 <TextBlock Text="• 给任意本地文件添加多个标签"/>
                 <TextBlock Text="• 支持多选文件，一键批量添加/移除标签"/>
+                <TextBlock Text="• 可以重命名、合并标签，为标签修改颜色"/>
                 <TextBlock Text="• 按多个标签交集筛选文件"/>
                 <TextBlock Text="• 搜索文件/给文件排序"/>
                 <TextBlock Text="• 标签数据保存在本地，不上传任何信息"/>
@@ -54,11 +55,11 @@
             <StackPanel Spacing="6">
                 <TextBlock Text="• WinUI 3 (Windows App SDK)"/>
                 <TextBlock Text="• .NET / C#"/>
-                <TextBlock Text="• System.Text.Json 本地存储"/>
+                <TextBlock Text="• Sqlite 本地存储"/>
             </StackPanel>
 
             <TextBlock
-                Text="数据保存位置：%LOCALAPPDATA%\Tagmgr\tags.json"
+                Text="数据保存名称：Tagmgr.db"
                 Foreground="Gray"
                 FontSize="12"
                 Margin="0,16,0,0"

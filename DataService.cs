@@ -4,19 +4,20 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.Data.Sqlite;
 using Microsoft.UI.Xaml.Media;
 
 namespace Tagmgr
 {
     public enum FileSortMode
     {
-        NameAsc,        // 名称 A-Z
-        NameDesc,       // 名称 Z-A
-        ModifiedDesc,   // 修改时间 新 → 旧
-        ModifiedAsc     // 修改时间 旧 → 新
+        NameAsc,
+        NameDesc,
+        ModifiedDesc,
+        ModifiedAsc
     }
+
     public class TagInfo
     {
         public string Name { get; set; } = "";
@@ -24,29 +25,30 @@ namespace Tagmgr
         public string CountText => $"{Count} 个文件";
         public SolidColorBrush BackgroundBrush => TagColorHelper.GetBackgroundBrush(Name);
     }
+
     public static class DataService
     {
-        // 全局唯一的文件记录集合，两个页面共享同一实例
+        // 全局唯一的文件记录集合
         public static ObservableCollection<FileTagItem> FileItems { get; } = new();
 
-        private const string FileName = "tags.json";
+        private const string DbFileName = "tagmgr.db";
         private const string CustomPathKey = "CustomDataPath";
-        private const string ColorsFileName = "tagcolors.json";
         private const string DefaultFolderName = "Tagmgr";
 
         private static string _dataFolder;
-        private static string _dataFile;
-        private static string _colorsFile;
+        private static string _dbFile;
 
-        // 标签名 → 颜色（#RRGGBB），未设置时不存在
+        // 标签名 → 颜色（#RRGGBB）
         private static readonly Dictionary<string, string> _tagColors = new();
 
-        // 当前数据文件夹与数据文件路径
         public static string DataFolder => _dataFolder;
-        public static string DataFile => _dataFile;
+        public static string DataFile => _dbFile;
 
         // 防止重复加载
         private static Task? _loadTask;
+
+        // 串行化写入，避免多个 SaveAsync 并发
+        private static readonly System.Threading.SemaphoreSlim _writeLock = new(1, 1);
 
         static DataService()
         {
@@ -58,8 +60,7 @@ namespace Tagmgr
                     DefaultFolderName)
                 : custom;
 
-            _dataFile = Path.Combine(_dataFolder, FileName);
-            _colorsFile = Path.Combine(_dataFolder, ColorsFileName);
+            _dbFile = Path.Combine(_dataFolder, DbFileName);
         }
 
         public static Task EnsureLoadedAsync()
@@ -67,20 +68,76 @@ namespace Tagmgr
             return _loadTask ??= LoadAsync();
         }
 
+        private static string ConnectionString => $"Data Source={_dbFile}";
+
+        // ---------------- 加载 ----------------
+
         private static async Task LoadAsync()
         {
-            await LoadTagColorsAsync();
             try
             {
-                if (!File.Exists(_dataFile)) return;
+                Directory.CreateDirectory(_dataFolder);
 
-                var json = await File.ReadAllTextAsync(_dataFile);
-                var list = JsonSerializer.Deserialize<List<FileTagItem>>(json);
-                if (list == null) return;
+                using var conn = new SqliteConnection(ConnectionString);
+                await conn.OpenAsync();
+                await EnsureSchemaAsync(conn);
 
                 FileItems.Clear();
-                foreach (var item in list)
-                    FileItems.Add(item);
+                _tagColors.Clear();
+
+                // 1) 加载标签 + 颜色
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT Name, Color FROM Tags;";
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    while (await reader.ReadAsync())
+                    {
+                        var name = reader.GetString(0);
+                        if (!reader.IsDBNull(1))
+                        {
+                            var color = reader.GetString(1);
+                            if (!string.IsNullOrEmpty(color))
+                                _tagColors[name] = color;
+                        }
+                    }
+                }
+
+                // 2) 加载文件
+                var fileDict = new Dictionary<long, FileTagItem>();
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = "SELECT Id, FilePath FROM Files ORDER BY Id;";
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    while (await reader.ReadAsync())
+                    {
+                        var id = reader.GetInt64(0);
+                        var path = reader.GetString(1);
+                        var item = new FileTagItem { FilePath = path };
+                        fileDict[id] = item;
+                        FileItems.Add(item);
+                    }
+                }
+
+                // 3) 加载文件-标签关联
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.CommandText = @"
+                        SELECT ft.FileId, t.Name
+                        FROM FileTags ft
+                        JOIN Tags t ON t.Id = ft.TagId
+                        ORDER BY ft.FileId;";
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    while (await reader.ReadAsync())
+                    {
+                        var fileId = reader.GetInt64(0);
+                        var tagName = reader.GetString(1);
+                        if (fileDict.TryGetValue(fileId, out var item)
+                            && !item.Tags.Contains(tagName))
+                        {
+                            item.Tags.Add(tagName);
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -88,31 +145,137 @@ namespace Tagmgr
             }
         }
 
+        // ---------------- 保存（全量重写） ----------------
+
         public static async Task SaveAsync()
         {
+            await _writeLock.WaitAsync();
             try
             {
                 Directory.CreateDirectory(_dataFolder);
-                var json = JsonSerializer.Serialize(
-                    FileItems,
-                    new JsonSerializerOptions { WriteIndented = true });
 
-                await File.WriteAllTextAsync(_dataFile, json);
+                using var conn = new SqliteConnection(ConnectionString);
+                await conn.OpenAsync();
+                await EnsureSchemaAsync(conn);
+
+                using var tx = conn.BeginTransaction();
+
+                // 1) 清空所有表
+                using (var cmd = conn.CreateCommand())
+                {
+                    cmd.Transaction = tx;
+                    cmd.CommandText = "DELETE FROM FileTags; DELETE FROM Files; DELETE FROM Tags;";
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                // 2) 收集所有标签（来自文件 + 颜色字典）
+                var allTags = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var item in FileItems)
+                    foreach (var tag in item.Tags)
+                        allTags.Add(tag);
+                foreach (var kv in _tagColors)
+                    allTags.Add(kv.Key);
+
+                // 3) 插入标签，拿到 Id
+                var tagIdMap = new Dictionary<string, long>(StringComparer.Ordinal);
+                foreach (var tag in allTags)
+                {
+                    using var cmd = conn.CreateCommand();
+                    cmd.Transaction = tx;
+                    cmd.CommandText =
+                        "INSERT INTO Tags (Name, Color) VALUES ($n, $c); " +
+                        "SELECT last_insert_rowid();";
+                    cmd.Parameters.AddWithValue("$n", tag);
+
+                    if (_tagColors.TryGetValue(tag, out var color) && !string.IsNullOrEmpty(color))
+                        cmd.Parameters.AddWithValue("$c", color);
+                    else
+                        cmd.Parameters.AddWithValue("$c", DBNull.Value);
+
+                    var id = (long)(await cmd.ExecuteScalarAsync())!;
+                    tagIdMap[tag] = id;
+                }
+
+                // 4) 插入文件和 FileTags
+                foreach (var item in FileItems)
+                {
+                    long fileId;
+                    using (var cmd = conn.CreateCommand())
+                    {
+                        cmd.Transaction = tx;
+                        cmd.CommandText =
+                            "INSERT INTO Files (FilePath) VALUES ($p); " +
+                            "SELECT last_insert_rowid();";
+                        cmd.Parameters.AddWithValue("$p", item.FilePath);
+                        fileId = (long)(await cmd.ExecuteScalarAsync())!;
+                    }
+
+                    foreach (var tag in item.Tags)
+                    {
+                        if (!tagIdMap.TryGetValue(tag, out var tagId)) continue;
+
+                        using var cmd = conn.CreateCommand();
+                        cmd.Transaction = tx;
+                        cmd.CommandText =
+                            "INSERT OR IGNORE INTO FileTags (FileId, TagId) VALUES ($f, $t);";
+                        cmd.Parameters.AddWithValue("$f", fileId);
+                        cmd.Parameters.AddWithValue("$t", tagId);
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+                }
+
+                tx.Commit();
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"保存数据失败: {ex.Message}");
             }
+            finally
+            {
+                _writeLock.Release();
+            }
         }
 
-        // 获取标签颜色，未设置时返回 null。
+        // ---------------- 数据库结构 ----------------
+
+        private static async Task EnsureSchemaAsync(SqliteConnection conn)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = @"
+                PRAGMA foreign_keys = ON;
+
+                CREATE TABLE IF NOT EXISTS Files (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    FilePath TEXT NOT NULL UNIQUE
+                );
+
+                CREATE TABLE IF NOT EXISTS Tags (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Name TEXT NOT NULL UNIQUE,
+                    Color TEXT
+                );
+
+                CREATE TABLE IF NOT EXISTS FileTags (
+                    FileId INTEGER NOT NULL,
+                    TagId INTEGER NOT NULL,
+                    PRIMARY KEY (FileId, TagId),
+                    FOREIGN KEY (FileId) REFERENCES Files(Id) ON DELETE CASCADE,
+                    FOREIGN KEY (TagId) REFERENCES Tags(Id) ON DELETE CASCADE
+                );
+
+                CREATE INDEX IF NOT EXISTS IX_FileTags_TagId ON FileTags(TagId);";
+
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        // ---------------- 标签颜色 ----------------
+
         public static string? GetTagColor(string tagName)
         {
             if (string.IsNullOrEmpty(tagName)) return null;
             return _tagColors.TryGetValue(tagName, out var hex) ? hex : null;
         }
 
-        // 设置或清除标签颜色。colorHex 为 null 或空时清除。
         public static void SetTagColor(string tagName, string? colorHex)
         {
             if (string.IsNullOrEmpty(tagName)) return;
@@ -122,43 +285,11 @@ namespace Tagmgr
             else
                 _tagColors[tagName] = colorHex;
         }
-        // 把所有标签颜色保存到 tagcolors.json。
-        public static async Task SaveTagColorsAsync()
-        {
-            try
-            {
-                Directory.CreateDirectory(_dataFolder);
-                var json = JsonSerializer.Serialize(
-                    _tagColors,
-                    new JsonSerializerOptions { WriteIndented = true });
 
-                await File.WriteAllTextAsync(_colorsFile, json);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"保存标签颜色失败: {ex.Message}");
-            }
-        }
+        // 颜色写入数据库，和 SaveAsync 走同一条路径
+        public static Task SaveTagColorsAsync() => SaveAsync();
 
-        private static async Task LoadTagColorsAsync()
-        {
-            try
-            {
-                if (!File.Exists(_colorsFile)) return;
-
-                var json = await File.ReadAllTextAsync(_colorsFile);
-                var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
-                if (dict == null) return;
-
-                _tagColors.Clear();
-                foreach (var kv in dict)
-                    _tagColors[kv.Key] = kv.Value;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"加载标签颜色失败: {ex.Message}");
-            }
-        }
+        // ---------------- 数据位置切换 ----------------
 
         public static async Task<bool> ChangeDataFolderAsync(string newFolder)
         {
@@ -173,26 +304,19 @@ namespace Tagmgr
 
                 Directory.CreateDirectory(newFolder);
 
-                var newFile = Path.Combine(newFolder, FileName);
-                var newColorsFile = Path.Combine(newFolder, ColorsFileName);
+                var newDbFile = Path.Combine(newFolder, DbFileName);
 
-
-                // 先把当前数据写盘，确保复制的是最新数据
+                // 确保数据已落盘
                 await SaveAsync();
-                await SaveTagColorsAsync();
 
-                // 复制到新位置（如果路径不同）
-                if (!string.Equals(_dataFile, newFile, StringComparison.OrdinalIgnoreCase)
-                    && File.Exists(_dataFile))
+                // 复制数据库文件
+                if (!string.Equals(_dbFile, newDbFile, StringComparison.OrdinalIgnoreCase)
+                    && File.Exists(_dbFile))
                 {
-                    File.Copy(_dataFile, newFile, overwrite: true);
+                    File.Copy(_dbFile, newDbFile, overwrite: true);
                 }
-                if (!string.Equals(_colorsFile, newColorsFile, StringComparison.OrdinalIgnoreCase)
-                && File.Exists(_colorsFile))
-                {
-                    File.Copy(_colorsFile, newColorsFile, overwrite: true);
-                }
-                // 更新设置：如果是默认文件夹，移除自定义设置
+
+                // 更新设置
                 var defaultFolder = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     DefaultFolderName);
@@ -202,12 +326,11 @@ namespace Tagmgr
                 else
                     ApplicationData.Current.LocalSettings.Values[CustomPathKey] = newFolder;
 
-                // 更新内部路径
+                // 更新路径
                 _dataFolder = newFolder;
-                _dataFile = newFile;
-                _colorsFile = newColorsFile;
+                _dbFile = newDbFile;
 
-                // 重置加载缓存，从新位置重新读取
+                // 重新加载
                 _loadTask = null;
                 await EnsureLoadedAsync();
 
@@ -219,7 +342,12 @@ namespace Tagmgr
                 return false;
             }
         }
-        public static IEnumerable<FileTagItem> ApplySort(IEnumerable<FileTagItem> source,FileSortMode mode)
+
+        // ---------------- 排序 ----------------
+
+        public static IEnumerable<FileTagItem> ApplySort(
+            IEnumerable<FileTagItem> source,
+            FileSortMode mode)
         {
             return mode switch
             {
@@ -229,7 +357,6 @@ namespace Tagmgr
                 FileSortMode.NameDesc => source
                     .OrderByDescending(f => f.FileName, StringComparer.OrdinalIgnoreCase),
 
-                // 修改时间为空（还没加载出来或读取失败）的排最后
                 FileSortMode.ModifiedDesc => source
                     .OrderByDescending(f => f.ModifiedTime ?? DateTimeOffset.MinValue),
 
