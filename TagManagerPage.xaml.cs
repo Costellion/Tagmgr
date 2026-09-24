@@ -176,6 +176,50 @@ namespace Tagmgr
             await DataService.SaveAsync();
             RefreshTags();
         }
+        private async void ChangeColor_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button btn || btn.Tag is not string tagName)
+                return;
+
+            var currentHex = DataService.GetTagColor(tagName) ?? "#E5E5E5";
+
+            var picker = new ColorPicker
+            {
+                Color = TagColorHelper.ParseHex(currentHex),
+                IsAlphaEnabled = false,
+                IsColorChannelTextInputVisible = true,
+                IsHexInputVisible = true,
+                IsMoreButtonVisible = false,
+                IsColorSliderVisible = true,
+                IsColorSpectrumVisible = true
+            };
+
+            var dialog = new ContentDialog
+            {
+                Title = $"设置标签颜色：{tagName}",
+                Content = picker,
+                PrimaryButtonText = "确定",
+                SecondaryButtonText = "清除颜色",
+                CloseButtonText = "取消",
+                DefaultButton = ContentDialogButton.Primary,
+                XamlRoot = this.XamlRoot
+            };
+
+            var result = await dialog.ShowAsync();
+
+            if (result == ContentDialogResult.Primary)
+            {
+                DataService.SetTagColor(tagName, TagColorHelper.ToHex(picker.Color));
+                await DataService.SaveTagColorsAsync();
+                RefreshTags();
+            }
+            else if (result == ContentDialogResult.Secondary)
+            {
+                DataService.SetTagColor(tagName, null);
+                await DataService.SaveTagColorsAsync();
+                RefreshTags();
+            }
+        }
 
         // ---------- 对话框 ----------
 

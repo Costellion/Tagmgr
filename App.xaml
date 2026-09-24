@@ -11,6 +11,7 @@
                 <!-- Other merged dictionaries here -->
             </ResourceDictionary.MergedDictionaries>
             <!-- Other app resources here -->
+            <local:TagColorConverter x:Key="TagColorConverter"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

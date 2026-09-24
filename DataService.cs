@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.UI.Xaml.Media;
 
 namespace Tagmgr
 {
@@ -21,6 +22,7 @@ namespace Tagmgr
         public string Name { get; set; } = "";
         public int Count { get; set; }
         public string CountText => $"{Count} 个文件";
+        public SolidColorBrush BackgroundBrush => TagColorHelper.GetBackgroundBrush(Name);
     }
     public static class DataService
     {
@@ -29,10 +31,15 @@ namespace Tagmgr
 
         private const string FileName = "tags.json";
         private const string CustomPathKey = "CustomDataPath";
+        private const string ColorsFileName = "tagcolors.json";
         private const string DefaultFolderName = "Tagmgr";
 
         private static string _dataFolder;
         private static string _dataFile;
+        private static string _colorsFile;
+
+        // 标签名 → 颜色（#RRGGBB），未设置时不存在
+        private static readonly Dictionary<string, string> _tagColors = new();
 
         // 当前数据文件夹与数据文件路径
         public static string DataFolder => _dataFolder;
@@ -52,6 +59,7 @@ namespace Tagmgr
                 : custom;
 
             _dataFile = Path.Combine(_dataFolder, FileName);
+            _colorsFile = Path.Combine(_dataFolder, ColorsFileName);
         }
 
         public static Task EnsureLoadedAsync()
@@ -61,6 +69,7 @@ namespace Tagmgr
 
         private static async Task LoadAsync()
         {
+            await LoadTagColorsAsync();
             try
             {
                 if (!File.Exists(_dataFile)) return;
@@ -95,6 +104,62 @@ namespace Tagmgr
                 System.Diagnostics.Debug.WriteLine($"保存数据失败: {ex.Message}");
             }
         }
+
+        // 获取标签颜色，未设置时返回 null。
+        public static string? GetTagColor(string tagName)
+        {
+            if (string.IsNullOrEmpty(tagName)) return null;
+            return _tagColors.TryGetValue(tagName, out var hex) ? hex : null;
+        }
+
+        // 设置或清除标签颜色。colorHex 为 null 或空时清除。
+        public static void SetTagColor(string tagName, string? colorHex)
+        {
+            if (string.IsNullOrEmpty(tagName)) return;
+
+            if (string.IsNullOrEmpty(colorHex))
+                _tagColors.Remove(tagName);
+            else
+                _tagColors[tagName] = colorHex;
+        }
+        // 把所有标签颜色保存到 tagcolors.json。
+        public static async Task SaveTagColorsAsync()
+        {
+            try
+            {
+                Directory.CreateDirectory(_dataFolder);
+                var json = JsonSerializer.Serialize(
+                    _tagColors,
+                    new JsonSerializerOptions { WriteIndented = true });
+
+                await File.WriteAllTextAsync(_colorsFile, json);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"保存标签颜色失败: {ex.Message}");
+            }
+        }
+
+        private static async Task LoadTagColorsAsync()
+        {
+            try
+            {
+                if (!File.Exists(_colorsFile)) return;
+
+                var json = await File.ReadAllTextAsync(_colorsFile);
+                var dict = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+                if (dict == null) return;
+
+                _tagColors.Clear();
+                foreach (var kv in dict)
+                    _tagColors[kv.Key] = kv.Value;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"加载标签颜色失败: {ex.Message}");
+            }
+        }
+
         public static async Task<bool> ChangeDataFolderAsync(string newFolder)
         {
             try
@@ -109,9 +174,12 @@ namespace Tagmgr
                 Directory.CreateDirectory(newFolder);
 
                 var newFile = Path.Combine(newFolder, FileName);
+                var newColorsFile = Path.Combine(newFolder, ColorsFileName);
+
 
                 // 先把当前数据写盘，确保复制的是最新数据
                 await SaveAsync();
+                await SaveTagColorsAsync();
 
                 // 复制到新位置（如果路径不同）
                 if (!string.Equals(_dataFile, newFile, StringComparison.OrdinalIgnoreCase)
@@ -119,7 +187,11 @@ namespace Tagmgr
                 {
                     File.Copy(_dataFile, newFile, overwrite: true);
                 }
-
+                if (!string.Equals(_colorsFile, newColorsFile, StringComparison.OrdinalIgnoreCase)
+                && File.Exists(_colorsFile))
+                {
+                    File.Copy(_colorsFile, newColorsFile, overwrite: true);
+                }
                 // 更新设置：如果是默认文件夹，移除自定义设置
                 var defaultFolder = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -133,6 +205,7 @@ namespace Tagmgr
                 // 更新内部路径
                 _dataFolder = newFolder;
                 _dataFile = newFile;
+                _colorsFile = newColorsFile;
 
                 // 重置加载缓存，从新位置重新读取
                 _loadTask = null;
@@ -146,9 +219,7 @@ namespace Tagmgr
                 return false;
             }
         }
-        public static IEnumerable<FileTagItem> ApplySort(
-    IEnumerable<FileTagItem> source,
-    FileSortMode mode)
+        public static IEnumerable<FileTagItem> ApplySort(IEnumerable<FileTagItem> source,FileSortMode mode)
         {
             return mode switch
             {

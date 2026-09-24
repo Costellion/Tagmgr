@@ -105,10 +105,10 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Border
-                                            Background="#E5E5E5"
+                                            Background="{Binding Converter={StaticResource TagColorConverter}}"
                                             CornerRadius="6"
                                             Margin="0,0,6,0"
-                                        Padding="8,2,4,2">
+                                            Padding="8,2,4,2">
                                             <StackPanel Orientation="Horizontal" Spacing="4">
                                                 <TextBlock Text="{Binding}" FontSize="12" VerticalAlignment="Center"/>
                                                 <Button
@@ -145,9 +145,12 @@
                 HorizontalAlignment="Stretch"
                 Click="PickFile_Click"/>
 
-            <TextBox
+            <AutoSuggestBox
                 x:Name="TagInput"
-                PlaceholderText="输入想要添加/移除的标签，例如：工作"/>
+                PlaceholderText="输入想要添加/移除的标签，例如：工作"
+                TextChanged="TagInput_TextChanged"
+                SuggestionChosen="TagInput_SuggestionChosen"
+                QuerySubmitted="TagInput_QuerySubmitted"/>
 
             <Button
                 Content="给选中文件添加标签"

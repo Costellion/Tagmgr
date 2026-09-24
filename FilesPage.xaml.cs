@@ -152,10 +152,20 @@ namespace Tagmgr
         }
 
         // 添加标签
+        // 点击“添加标签”按钮
         private async void AddTag_Click(object sender, RoutedEventArgs e)
         {
+            await AddTagAsync(TagInput.Text);
+        }
+
+        // 供按钮和自动补全共用
+        private async Task AddTagAsync(string? rawTag)
+        {
+            var tag = (rawTag ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(tag)) return;
+
             var selected = FileListView.SelectedItems
-                .Cast<FileTagItem>()
+                .OfType<FileTagItem>()
                 .ToList();
 
             if (selected.Count == 0)
@@ -163,9 +173,6 @@ namespace Tagmgr
                 await ShowMessageAsync("请先在左侧选中至少一个文件。");
                 return;
             }
-
-            var tag = TagInput.Text.Trim();
-            if (string.IsNullOrWhiteSpace(tag)) return;
 
             foreach (var item in selected)
             {
@@ -176,6 +183,57 @@ namespace Tagmgr
             TagInput.Text = "";
             await DataService.SaveAsync();
             RefreshDisplay();
+        }
+
+        // 自动补全：输入时提示已有标签
+        private void TagInput_TextChanged(
+            AutoSuggestBox sender,
+            AutoSuggestBoxTextChangedEventArgs args)
+        {
+            if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput)
+                return;
+
+            var query = (sender.Text ?? "").Trim();
+
+            var all = DataService.FileItems
+                .SelectMany(f => f.Tags)
+                .Where(t => !string.IsNullOrEmpty(t))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (!string.IsNullOrEmpty(query))
+            {
+                all = all
+                    .Where(t => t.Contains(query, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            all = all
+                .OrderBy(t => t, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            sender.ItemsSource = all;
+        }
+
+        // 用户从下拉里选了一个标签
+        private void TagInput_SuggestionChosen(
+            AutoSuggestBox sender,
+            AutoSuggestBoxSuggestionChosenEventArgs args)
+        {
+            if (args.SelectedItem is string tag)
+                sender.Text = tag;
+        }
+
+        // 用户按回车，或点击下拉里的项并回车
+        private async void TagInput_QuerySubmitted(
+            AutoSuggestBox sender,
+            AutoSuggestBoxQuerySubmittedEventArgs args)
+        {
+            var tag = string.IsNullOrWhiteSpace(args.QueryText)
+                ? sender.Text
+                : args.QueryText;
+
+            await AddTagAsync(tag);
         }
 
         //移除标签
