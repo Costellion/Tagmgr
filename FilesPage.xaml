@@ -65,7 +65,9 @@
 
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:FileTagItem">
-                    <Grid Margin="0,6" DoubleTapped="FileItem_DoubleTapped">
+                    <Grid Margin="0,6"
+                        DoubleTapped="FileItem_DoubleTapped"
+                        RightTapped="FileItem_RightTapped">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>

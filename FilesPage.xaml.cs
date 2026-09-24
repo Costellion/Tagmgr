@@ -6,8 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.System;
@@ -297,10 +300,17 @@ namespace Tagmgr
             //RefreshDisplay();
         }
         // 双击文件项打开文件
-        private async void FileItem_DoubleTapped(object sender,DoubleTappedRoutedEventArgs e)
+        private async void FileItem_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
             if (sender is not FrameworkElement fe) return;
             if (fe.DataContext is not FileTagItem item) return;
+
+            await OpenFileAsync(item);
+        }
+
+        // 打开文件的实际逻辑，双击和右键菜单共用
+        private async Task OpenFileAsync(FileTagItem item)
+        {
             try
             {
                 var file = await StorageFile.GetFileFromPathAsync(item.FilePath);
@@ -314,6 +324,111 @@ namespace Tagmgr
                 await ShowMessageAsync(
                     $"无法打开文件：{ex.Message}\n路径：{item.FilePath}");
             }
+        }
+        private void FileItem_RightTapped(object sender, RightTappedRoutedEventArgs e)
+        {
+            if (sender is not FrameworkElement fe) return;
+            if (fe.DataContext is not FileTagItem item) return;
+
+            // 被右键的项如果不在选中列表里，先把选中切到它
+            if (!FileListView.SelectedItems.Contains(item))
+            {
+                FileListView.SelectedItems.Clear();
+                FileListView.SelectedItems.Add(item);
+            }
+
+            var menu = ContextMenuHelper.BuildFileMenu();
+
+            // 给每个菜单项挂统一的动作处理器
+            foreach (var mfi in menu.Items.OfType<MenuFlyoutItem>())
+            {
+                if (mfi.Tag is string action)
+                    mfi.Click += (s, args) => _ = HandleFileMenuActionAsync(action);
+            }
+
+            menu.ShowAt(fe, e.GetPosition(fe));
+        }
+
+        // 统一处理右键菜单的动作
+        private async Task HandleFileMenuActionAsync(string action)
+        {
+            var selected = FileListView.SelectedItems
+                .OfType<FileTagItem>()
+                .ToList();
+
+            if (selected.Count == 0) return;
+
+            switch (action)
+            {
+                case ContextMenuHelper.ActionOpen:
+                    // “打开文件”只作用于被右键的那一个
+                    await OpenFileAsync(selected[0]);
+                    break;
+
+                case ContextMenuHelper.ActionOpenFolder:
+                    OpenContainingFolder(selected[0]);
+                    break;
+
+                case ContextMenuHelper.ActionCopyPath:
+                    CopyToClipboard(selected.Select(f => f.FilePath));
+                    break;
+
+                case ContextMenuHelper.ActionCopyName:
+                    CopyToClipboard(selected.Select(f => f.FileName));
+                    break;
+
+                case ContextMenuHelper.ActionDelete:
+                    await DeleteSelectedAsync(selected);
+                    break;
+            }
+        }
+
+        // 打开所在文件夹并选中文件
+        private void OpenContainingFolder(FileTagItem item)
+        {
+            try
+            {
+                var folder = Path.GetDirectoryName(item.FilePath);
+                if (string.IsNullOrEmpty(folder) || !Directory.Exists(folder))
+                {
+                    _ = ShowMessageAsync($"文件夹不存在：\n{folder}");
+                    return;
+                }
+
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = $"/select,\"{item.FilePath}\"",
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                _ = ShowMessageAsync($"无法打开文件夹：{ex.Message}");
+            }
+        }
+
+        // 把若干行文本放进剪贴板
+        private void CopyToClipboard(IEnumerable<string> lines)
+        {
+            var text = string.Join(Environment.NewLine, lines);
+            if (string.IsNullOrEmpty(text)) return;
+
+            var dp = new DataPackage();
+            dp.SetText(text);
+            Clipboard.SetContent(dp);
+        }
+
+        // 删除记录（不删除磁盘文件）
+        private async Task DeleteSelectedAsync(List<FileTagItem> selected)
+        {
+            if (selected.Count == 0) return;
+
+            foreach (var item in selected)
+                FileItems.Remove(item);
+
+            await DataService.SaveAsync();
+            // CollectionChanged 会自动触发 RefreshDisplay
         }
         // 简单提示框
         private async Task ShowMessageAsync(string message)
