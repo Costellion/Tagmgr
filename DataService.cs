@@ -68,7 +68,7 @@ namespace Tagmgr
             return _loadTask ??= LoadAsync();
         }
 
-        private static string ConnectionString => $"Data Source={_dbFile}";
+        private static string ConnectionString => $"Data Source={_dbFile};Pooling=False";
 
         // ---------------- 加载 ----------------
 
@@ -289,8 +289,8 @@ namespace Tagmgr
         // 颜色写入数据库，和 SaveAsync 走同一条路径
         public static Task SaveTagColorsAsync() => SaveAsync();
 
-        // ---------------- 数据位置切换 ----------------
-
+        // ---------------- （废弃）数据位置切换 ----------------
+        /*
         public static async Task<bool> ChangeDataFolderAsync(string newFolder)
         {
             try
@@ -339,6 +339,103 @@ namespace Tagmgr
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"更改数据位置失败: {ex.Message}");
+                return false;
+            }
+        }
+        */
+        private static void CopyFileRaw(string source, string dest)
+        {
+            using var src = new FileStream(
+                source, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var dst = new FileStream(
+                dest, FileMode.Create, FileAccess.Write, FileShare.None);
+            src.CopyTo(dst);
+        }
+        // ---------------- 导入 / 导出 ----------------
+        // 导出当前数据库到指定路径。
+        public static async Task<bool> ExportAsync(string destPath)
+        {
+            if (string.IsNullOrWhiteSpace(destPath)) return false;
+
+            try
+            {
+                await SaveAsync();
+
+                await _writeLock.WaitAsync();
+                try
+                {
+                    if (!File.Exists(_dbFile))
+                        return false;
+
+                    var dir = Path.GetDirectoryName(destPath);
+                    if (!string.IsNullOrEmpty(dir))
+                        Directory.CreateDirectory(dir);
+                    SqliteConnection.ClearAllPools();
+                    CopyFileRaw(_dbFile, destPath);
+                    return true;
+                }
+                finally
+                {
+                    _writeLock.Release();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"导出失败: {ex.Message}");
+                return false;
+            }
+        }
+        // 从指定路径导入数据库，覆盖当前数据。成功后重新加载 FileItems。
+        public static async Task<bool> ImportAsync(string sourcePath)
+        {
+            if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
+                return false;
+
+            if (!IsSqliteFile(sourcePath))
+                return false;
+
+            try
+            {
+                await _writeLock.WaitAsync();
+                try
+                {
+                    Directory.CreateDirectory(_dataFolder);
+                    SqliteConnection.ClearAllPools();
+                    CopyFileRaw(sourcePath, _dbFile);
+                }
+                finally
+                {
+                    _writeLock.Release();
+                }
+
+                _loadTask = null;
+                await EnsureLoadedAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"导入失败: {ex.Message}");
+                return false;
+            }
+        }
+        // 校验文件头，拒绝明显不是 SQLite 的文件
+        private static bool IsSqliteFile(string path)
+        {
+            try
+            {
+                using var fs = File.OpenRead(path);
+                if (fs.Length < 16) return false;
+
+                var header = new byte[16];
+                int read = fs.Read(header, 0, 16);
+                if (read < 16) return false;
+
+                var text = System.Text.Encoding.ASCII.GetString(header, 0, 15);
+                return text == "SQLite format 3";
+            }
+            catch
+            {
                 return false;
             }
         }

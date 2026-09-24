@@ -1,10 +1,12 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Windows.Storage;
 using Windows.Storage.Pickers;
 
 namespace Tagmgr
@@ -41,8 +43,8 @@ namespace Tagmgr
                 _ => 0
             };
 
-            // 数据路径
-            DataPathText.Text = DataService.DataFile;
+            // 数据路径（废弃）
+            //DataPathText.Text = DataService.DataFile;
 
             // 统计
             FileCountText.Text = $"文件记录：{DataService.FileItems.Count} 条";
@@ -69,63 +71,93 @@ namespace Tagmgr
                 _ => ElementTheme.Default
             };
         }
-
-        // 修改数据存储位置
-        private async void ChangeDataFolder_Click(object sender, RoutedEventArgs e)
+        private async void ExportData_Click(object sender, RoutedEventArgs e)
         {
-            var picker = new FolderPicker();
-            picker.FileTypeFilter.Add("*");
-            picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+            var picker = new FileSavePicker
+            {
+                SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+                SuggestedFileName = $"tagmgr-backup-{DateTime.Now:yyyyMMdd-HHmm}"
+            };
+            picker.FileTypeChoices.Add("Tagmgr 备份", new List<string> { ".db" });
 
             var mainWindow = ((App)Application.Current).MainWindow!;
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(mainWindow);
             WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
 
-            var folder = await picker.PickSingleFolderAsync();
-            if (folder == null) return;
-
-            var ok = await DataService.ChangeDataFolderAsync(folder.Path);
-
-            if (ok)
+            StorageFile? file;
+            try
             {
-                RefreshAll();
-                await ShowMessageAsync(
-                    $"数据位置已更新，原有数据已复制到新位置。\n\n当前数据文件：\n{DataService.DataFile}");
+                file = await picker.PickSaveFileAsync();
             }
-            else
+            catch (Exception ex)
             {
-                await ShowMessageAsync("修改数据位置失败，请检查路径是否有效、是否有写入权限。");
-            }
-        }
-
-        // 恢复默认位置
-        private async void ResetDataFolder_Click(object sender, RoutedEventArgs e)
-        {
-            var defaultFolder = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Tagmgr");
-
-            if (string.Equals(DataService.DataFolder, defaultFolder, StringComparison.OrdinalIgnoreCase))
-            {
-                await ShowMessageAsync("当前已经在使用默认位置。");
+                await ShowMessageAsync($"无法打开保存对话框：{ex.Message}");
                 return;
             }
 
-            var ok = await DataService.ChangeDataFolderAsync(defaultFolder);
+            if (file == null) return;
+
+            var ok = await DataService.ExportAsync(file.Path);
+
+            if (ok)
+                await ShowMessageAsync($"已导出到：\n{file.Path}");
+            else
+                await ShowMessageAsync("导出失败。请确认目标位置可写，或换一个位置重试。");
+        }
+
+        // 导入数据
+        private async void ImportData_Click(object sender, RoutedEventArgs e)
+        {
+            var picker = new FileOpenPicker
+            {
+                SuggestedStartLocation = PickerLocationId.DocumentsLibrary
+            };
+            picker.FileTypeFilter.Add(".db");
+
+            var mainWindow = ((App)Application.Current).MainWindow!;
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(mainWindow);
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+
+            StorageFile? file;
+            try
+            {
+                file = await picker.PickSingleFileAsync();
+            }
+            catch (Exception ex)
+            {
+                await ShowMessageAsync($"无法打开文件对话框：{ex.Message}");
+                return;
+            }
+
+            if (file == null) return;
+
+            // 二次确认：导入会覆盖当前数据
+            var confirm = new ContentDialog
+            {
+                Title = "确认导入",
+                Content = $"导入会用所选文件覆盖当前数据，且无法撤销。\n\n所选文件：\n{file.Path}\n\n是否继续？",
+                PrimaryButtonText = "导入并覆盖",
+                CloseButtonText = "取消",
+                DefaultButton = ContentDialogButton.Close,
+                XamlRoot = this.XamlRoot
+            };
+
+            if (await confirm.ShowAsync() != ContentDialogResult.Primary)
+                return;
+
+            var ok = await DataService.ImportAsync(file.Path);
 
             if (ok)
             {
                 RefreshAll();
-                await ShowMessageAsync(
-                    $"已恢复到默认位置。\n\n当前数据文件：\n{DataService.DataFile}");
+                await ShowMessageAsync("导入成功，数据已更新。");
             }
             else
             {
-                await ShowMessageAsync("恢复默认位置失败。");
+                await ShowMessageAsync(
+                    "导入失败。请确认所选文件是有效的 Tagmgr 数据库备份。");
             }
         }
-
-        // 打开数据文件夹
         private void OpenDataFolder_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -145,7 +177,6 @@ namespace Tagmgr
                 _ = ShowMessageAsync($"无法打开文件夹：{ex.Message}");
             }
         }
-
         private async Task ShowMessageAsync(string message)
         {
             var dialog = new ContentDialog

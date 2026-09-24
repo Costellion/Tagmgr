@@ -33,7 +33,7 @@
   <Applications>
     <Application Id="App"
       Executable="$targetnametoken$.exe"
-      EntryPoint="$targetentrypoint$" uap18:TrustLevel="appContainer" uap18:RuntimeBehavior="windowsApp">
+      EntryPoint="$targetentrypoint$" uap18:RuntimeBehavior="win32App">
       <uap:VisualElements
         DisplayName="TagManager"
         Description="Tagmgr"

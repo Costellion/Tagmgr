@@ -132,5 +132,7 @@
     <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
     <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
     <DefaultLanguage>zh-CN</DefaultLanguage>
+    <ApplicationIcon>Assets\Tagmgr.ico</ApplicationIcon>
+    <WindowsPackageType>MSIX</WindowsPackageType>
   </PropertyGroup>
 </Project>

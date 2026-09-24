@@ -38,20 +38,25 @@
 
             <!-- 数据存储 -->
             <TextBlock
-                Text="数据存储位置"
+                Text="数据备份"
                 FontSize="16"
                 FontWeight="SemiBold"
                 Margin="0,16,0,0"/>
 
             <TextBlock
-                x:Name="DataPathText"
+                Text="可通过下方按钮导出为备份文件，或从备份文件恢复。"
+                Foreground="Gray"
+                TextWrapping="Wrap"/>
+
+            <TextBlock
+                Text="数据存储于虚拟化路径。"
                 Foreground="Gray"
                 TextWrapping="Wrap"/>
 
             <StackPanel Orientation="Horizontal" Spacing="10">
-                <Button Content="修改位置..." Click="ChangeDataFolder_Click"/>
+                <Button Content="导出数据..." Click="ExportData_Click"/>
+                <Button Content="导入数据..." Click="ImportData_Click"/>
                 <Button Content="打开数据文件夹" Click="OpenDataFolder_Click"/>
-                <Button Content="恢复默认位置" Click="ResetDataFolder_Click"/>
             </StackPanel>
 
             <!-- 统计 -->
