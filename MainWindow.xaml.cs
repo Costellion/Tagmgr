@@ -1,5 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI;                   // Colors
+using Microsoft.UI.Windowing;         // AppWindowTitleBar（其实用不到枚举，但类在这里）
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
@@ -28,7 +30,11 @@ namespace Tagmgr
         public MainWindow()
         {
             this.InitializeComponent();
+            // ExtendsContentIntoTitleBar = true;
             this.AppWindow.SetIcon("Assets/Tagmgr.ico");
+            // 应用保存的主题，并订阅后续变化
+            ApplyTheme();
+            AppSettings.ThemeChanged += ApplyTheme;
             // 默认选中第一项并显示“所有文件”页
             NavView.SelectedItem = NavView.MenuItems[0];
             ContentFrame.Navigate(typeof(FilesPage));
@@ -61,5 +67,16 @@ namespace Tagmgr
 
             }
         }
+        private void ApplyTheme()
+        {
+            NavView.RequestedTheme = AppSettings.Theme;
+            this.AppWindow.TitleBar.PreferredTheme = AppSettings.Theme switch
+            {
+                ElementTheme.Light => TitleBarTheme.Light,
+                ElementTheme.Dark => TitleBarTheme.Dark,
+                _ => TitleBarTheme.UseDefaultAppMode
+            };
+        }
     }
+
 }

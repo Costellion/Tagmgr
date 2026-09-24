@@ -20,22 +20,39 @@
                 FontSize="24"
                 FontWeight="SemiBold"/>
 
+            <!-- 外观主题 -->
+            <TextBlock
+                Text="外观主题"
+                FontSize="16"
+                FontWeight="SemiBold"
+                Margin="0,8,0,0"/>
+
+            <ComboBox
+                x:Name="ThemeComboBox"
+                MinWidth="220"
+                SelectionChanged="Theme_SelectionChanged">
+                <ComboBoxItem Content="跟随系统" Tag="Default"/>
+                <ComboBoxItem Content="浅色" Tag="Light"/>
+                <ComboBoxItem Content="深色" Tag="Dark"/>
+            </ComboBox>
+
             <!-- 数据存储 -->
             <TextBlock
                 Text="数据存储位置"
                 FontSize="16"
                 FontWeight="SemiBold"
-                Margin="0,8,0,0"/>
+                Margin="0,16,0,0"/>
 
             <TextBlock
                 x:Name="DataPathText"
                 Foreground="Gray"
                 TextWrapping="Wrap"/>
 
-            <Button
-                Content="打开数据文件夹"
-                Click="OpenDataFolder_Click"
-                HorizontalAlignment="Left"/>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button Content="修改位置..." Click="ChangeDataFolder_Click"/>
+                <Button Content="打开数据文件夹" Click="OpenDataFolder_Click"/>
+                <Button Content="恢复默认位置" Click="ResetDataFolder_Click"/>
+            </StackPanel>
 
             <!-- 统计 -->
             <TextBlock
