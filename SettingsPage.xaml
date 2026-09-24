@@ -1,0 +1,54 @@
+<Page
+    x:Class="Tagmgr.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Tagmgr"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Loaded="Page_Loaded">
+
+    <ScrollViewer>
+        <StackPanel
+            Padding="32"
+            Spacing="16"
+            MaxWidth="720"
+            HorizontalAlignment="Left">
+
+            <TextBlock
+                Text="设置"
+                FontSize="24"
+                FontWeight="SemiBold"/>
+
+            <!-- 数据存储 -->
+            <TextBlock
+                Text="数据存储位置"
+                FontSize="16"
+                FontWeight="SemiBold"
+                Margin="0,8,0,0"/>
+
+            <TextBlock
+                x:Name="DataPathText"
+                Foreground="Gray"
+                TextWrapping="Wrap"/>
+
+            <Button
+                Content="打开数据文件夹"
+                Click="OpenDataFolder_Click"
+                HorizontalAlignment="Left"/>
+
+            <!-- 统计 -->
+            <TextBlock
+                Text="当前数据"
+                FontSize="16"
+                FontWeight="SemiBold"
+                Margin="0,16,0,0"/>
+
+            <StackPanel Spacing="6">
+                <TextBlock x:Name="FileCountText"/>
+                <TextBlock x:Name="TagCountText"/>
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

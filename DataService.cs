@@ -15,6 +15,12 @@ namespace Tagmgr
         ModifiedDesc,   // 修改时间 新 → 旧
         ModifiedAsc     // 修改时间 旧 → 新
     }
+    public class TagInfo
+    {
+        public string Name { get; set; } = "";
+        public int Count { get; set; }
+        public string CountText => $"{Count} 个文件";
+    }
     public static class DataService
     {
         // 全局唯一的文件记录集合，两个页面共享同一实例

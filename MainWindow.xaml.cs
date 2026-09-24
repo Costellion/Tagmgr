@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Storage.Pickers;
+using Windows.UI.ApplicationSettings;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -48,9 +49,16 @@ namespace Tagmgr
                 case "tags":
                     ContentFrame.Navigate(typeof(TagsPage));
                     break;
+                case "tagmanager":
+                    ContentFrame.Navigate(typeof(TagManagerPage));
+                    break;
+                case "settings":
+                    ContentFrame.Navigate(typeof(SettingsPage));
+                    break;
                 case "about":
                     ContentFrame.Navigate(typeof(AboutPage));
                     break;
+
             }
         }
     }
