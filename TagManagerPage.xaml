@@ -40,7 +40,7 @@
             SelectionMode="Extended">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="local:TagInfo">
-                    <Grid Margin="0,6" ColumnSpacing="8">
+                    <Grid Margin="0,6" ColumnSpacing="8" RightTapped="TagItem_RightTapped">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
@@ -49,37 +49,36 @@
 
                         <!-- 颜色块：点击可改颜色 -->
                         <Button
-                Grid.Column="0"
-                Width="28"
-                Height="28"
-                Padding="0"
-                CornerRadius="4"
-                Background="{x:Bind BackgroundBrush, Mode=OneWay}"
-                BorderThickness="1"
-                BorderBrush="#40000000"
-                Tag="{x:Bind Name}"
-                Click="ChangeColor_Click"
-                ToolTipService.ToolTip="设置颜色"/>
-
+                            Grid.Column="0"
+                            Width="28"
+                            Height="28"
+                            Padding="0"
+                            CornerRadius="4"
+                            Background="{x:Bind BackgroundBrush, Mode=OneWay}"
+                            BorderThickness="1"
+                            BorderBrush="#40000000"
+                            Tag="{x:Bind Name}"
+                            Click="ChangeColor_Click"
+                            ToolTipService.ToolTip="设置颜色"/>
                         <StackPanel
-                Grid.Column="1"
-                Orientation="Horizontal"
-                Spacing="8"
-                VerticalAlignment="Center">
+                            Grid.Column="1"
+                            Orientation="Horizontal"
+                            Spacing="8"
+                            VerticalAlignment="Center">
                             <FontIcon
-                    Glyph="&#xE8EC;"
-                    FontSize="14"
-                    Foreground="#666"/>
+                                Glyph="&#xE8EC;"
+                                FontSize="14"
+                                Foreground="#666"/>
                             <TextBlock
-                    Text="{x:Bind Name}"
-                    FontWeight="SemiBold"/>
+                                Text="{x:Bind Name}"
+                                FontWeight="SemiBold"/>
                         </StackPanel>
 
                         <TextBlock
-                Grid.Column="2"
-                Text="{x:Bind CountText}"
-                Foreground="Gray"
-                VerticalAlignment="Center"/>
+                            Grid.Column="2"
+                            Text="{x:Bind CountText}"
+                            Foreground="Gray"
+                            VerticalAlignment="Center"/>
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
