@@ -10,7 +10,7 @@
 
   <Identity
     Name="38bd628a-80a7-4079-affa-a5b7805a2887"
-    Publisher="CN=AORUS"
+    Publisher="CN=Costellion"
     Version="1.0.0.0" />
 
   <mp:PhoneIdentity PhoneProductId="38bd628a-80a7-4079-affa-a5b7805a2887" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
@@ -38,9 +38,15 @@
         DisplayName="TagManager"
         Description="Tagmgr"
         BackgroundColor="transparent"
-        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square150x150Logo="Assets\Tiles\Medium\Square150x150Logo.png"
         Square44x44Logo="Assets\Logo\TagMgrLogo.png">
-        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"  Square71x71Logo="Assets\SmallTile.png" Square310x310Logo="Assets\Tiles\Large\LargeTile.png" ShortName="TagManager">
+          <uap:ShowNameOnTiles>
+            <uap:ShowOn Tile="square150x150Logo"/>
+            <uap:ShowOn Tile="wide310x150Logo"/>
+            <uap:ShowOn Tile="square310x310Logo"/>
+          </uap:ShowNameOnTiles>
+        </uap:DefaultTile >
         <uap:SplashScreen Image="Assets\SplashScreen\SplashScreen.png" />
         <uap:InitialRotationPreference>
           <uap:Rotation Preference="landscape"/></uap:InitialRotationPreference>

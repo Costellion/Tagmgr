@@ -54,6 +54,11 @@
     <None Remove="Assets\Logo\TagMgrLogo.targetsize-256_altform-unplated.png" />
     <None Remove="Assets\Logo\TagMgrLogo.targetsize-32.png" />
     <None Remove="Assets\Logo\TagMgrLogo.targetsize-48.png" />
+    <None Remove="Assets\SmallTile.scale-100.png" />
+    <None Remove="Assets\SmallTile.scale-125.png" />
+    <None Remove="Assets\SmallTile.scale-150.png" />
+    <None Remove="Assets\SmallTile.scale-200.png" />
+    <None Remove="Assets\SmallTile.scale-400.png" />
     <None Remove="Assets\SplashScreen\SplashScreen.scale-100.png" />
     <None Remove="Assets\SplashScreen\SplashScreen.scale-125.png" />
     <None Remove="Assets\SplashScreen\SplashScreen.scale-150.png" />
@@ -75,6 +80,16 @@
     <None Remove="Assets\TagMgrLogo.targetsize-256_altform-unplated.png" />
     <None Remove="Assets\TagMgrLogo.targetsize-32.png" />
     <None Remove="Assets\TagMgrLogo.targetsize-48.png" />
+    <None Remove="Assets\Tiles\Large\LargeTile.scale-100.png" />
+    <None Remove="Assets\Tiles\Large\LargeTile.scale-125.png" />
+    <None Remove="Assets\Tiles\Large\LargeTile.scale-150.png" />
+    <None Remove="Assets\Tiles\Large\LargeTile.scale-200.png" />
+    <None Remove="Assets\Tiles\Large\LargeTile.scale-400.png" />
+    <None Remove="Assets\Tiles\Medium\Square150x150Logo.scale-100.png" />
+    <None Remove="Assets\Tiles\Medium\Square150x150Logo.scale-125.png" />
+    <None Remove="Assets\Tiles\Medium\Square150x150Logo.scale-150.png" />
+    <None Remove="Assets\Tiles\Medium\Square150x150Logo.scale-200.png" />
+    <None Remove="Assets\Tiles\Medium\Square150x150Logo.scale-400.png" />
     <None Remove="TagsPage.xaml" />
   </ItemGroup>
 
@@ -134,5 +149,7 @@
     <DefaultLanguage>zh-CN</DefaultLanguage>
     <ApplicationIcon>Assets\Tagmgr.ico</ApplicationIcon>
     <WindowsPackageType>MSIX</WindowsPackageType>
+    <PackageCertificateThumbprint>35982881BB0C7934B876533E39F9279BBB5109F3</PackageCertificateThumbprint>
+    <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
   </PropertyGroup>
 </Project>
