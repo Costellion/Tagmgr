@@ -5,73 +5,253 @@ using System.Threading.Tasks;
 
 namespace Tagmgr
 {
-    // ==================== 添加标签 ====================
-    public class AddTagCommand : IUndoableCommand
-    {
-        private readonly List<FileTagItem> _files;
-        private readonly string _tag;
+    // ============================================================
+    //  命令接口
+    // ============================================================
 
+    /// <summary>
+    /// 可撤销命令的统一接口。
+    /// </summary>
+    public interface IUndoableCommand
+    {
+        string Description { get; }
+        Task RedoAsync();
+        Task UndoAsync();
+    }
+
+    // ============================================================
+    //  撤销 / 重做服务
+    // ============================================================
+
+    /// <summary>
+    /// 全局撤销 / 重做服务。
+    /// 所有数据修改都通过 ExecuteAsync 提交命令，内部负责保存和通知刷新。
+    /// </summary>
+    public static class UndoService
+    {
+        private const int MaxDepth = 50;
+
+        private static readonly List<IUndoableCommand> _undo = new();
+        private static readonly List<IUndoableCommand> _redo = new();
+        private static readonly System.Threading.SemaphoreSlim _lock = new(1, 1);
+
+        /// <summary>撤销栈或重做栈发生变化时触发。</summary>
+        public static event Action? StateChanged;
+
+        public static bool CanUndo
+        {
+            get { return _undo.Count > 0; }
+        }
+
+        public static bool CanRedo
+        {
+            get { return _redo.Count > 0; }
+        }
+
+        /// <summary>
+        /// 执行一个命令并压入撤销栈。新命令会清空重做栈。
+        /// </summary>
+        public static async Task ExecuteAsync(IUndoableCommand command)
+        {
+            if (command == null) return;
+
+            await _lock.WaitAsync();
+            try
+            {
+                await command.RedoAsync();
+
+                _undo.Add(command);
+                if (_undo.Count > MaxDepth)
+                    _undo.RemoveAt(0);
+
+                _redo.Clear();
+
+                await SaveAndNotifyAsync();
+            }
+            finally
+            {
+                _lock.Release();
+            }
+
+            NotifyStateChanged();
+        }
+
+        public static async Task UndoAsync()
+        {
+            await _lock.WaitAsync();
+            try
+            {
+                if (_undo.Count == 0) return;
+
+                var cmd = _undo[_undo.Count - 1];
+                _undo.RemoveAt(_undo.Count - 1);
+
+                await cmd.UndoAsync();
+                _redo.Add(cmd);
+
+                await SaveAndNotifyAsync();
+            }
+            finally
+            {
+                _lock.Release();
+            }
+
+            NotifyStateChanged();
+        }
+
+        public static async Task RedoAsync()
+        {
+            await _lock.WaitAsync();
+            try
+            {
+                if (_redo.Count == 0) return;
+
+                var cmd = _redo[_redo.Count - 1];
+                _redo.RemoveAt(_redo.Count - 1);
+
+                await cmd.RedoAsync();
+                _undo.Add(cmd);
+
+                await SaveAndNotifyAsync();
+            }
+            finally
+            {
+                _lock.Release();
+            }
+
+            NotifyStateChanged();
+        }
+
+        /// <summary>清空撤销与重做栈。数据导入后应调用。</summary>
+        public static void Clear()
+        {
+            _undo.Clear();
+            _redo.Clear();
+            NotifyStateChanged();
+        }
+
+        // 每次执行、撤销或重做后，统一保存并通知界面刷新
+        private static async Task SaveAndNotifyAsync()
+        {
+            await DataService.SaveAsync();
+            DataService.NotifyDataChanged();
+        }
+
+        private static void NotifyStateChanged()
+        {
+            if (StateChanged != null)
+            {
+                StateChanged.Invoke();
+            }
+        }
+    }
+
+    // ============================================================
+    //  标签：添加 / 移除
+    // ============================================================
+
+    /// <summary>
+    /// 给一组文件添加或移除同一个标签。
+    /// 两个方向的逻辑完全对称，只是正反操作互换，共用一个基类。
+    /// </summary>
+    public abstract class TagToggleCommand : IUndoableCommand
+    {
+        protected readonly string Tag;
+        protected readonly List<FileTagItem> Files;
+
+        protected TagToggleCommand(IEnumerable<FileTagItem> files, string tag)
+        {
+            Tag = tag;
+            Files = files.Where(f => NeedsChange(f)).ToList();
+        }
+
+        // 该文件是否需要变更，避免对已经是目标状态的文件做无用操作
+        protected abstract bool NeedsChange(FileTagItem file);
+
+        // 正向执行（Redo）
+        protected abstract void Apply(FileTagItem file);
+
+        // 反向执行（Undo）
+        protected abstract void Revert(FileTagItem file);
+
+        public abstract string Description { get; }
+
+        public Task RedoAsync()
+        {
+            foreach (var f in Files)
+                Apply(f);
+            return Task.CompletedTask;
+        }
+
+        public Task UndoAsync()
+        {
+            foreach (var f in Files)
+                Revert(f);
+            return Task.CompletedTask;
+        }
+    }
+
+    /// <summary>给一组文件添加同一个标签。</summary>
+    public class AddTagCommand : TagToggleCommand
+    {
         public AddTagCommand(IEnumerable<FileTagItem> files, string tag)
+            : base(files, tag) { }
+
+        protected override bool NeedsChange(FileTagItem file)
         {
-            _tag = tag;
-            // 只记录原本没有该标签的文件
-            _files = files.Where(f => !f.Tags.Contains(tag)).ToList();
+            return !file.Tags.Contains(Tag);
         }
 
-        public string Description => $"添加标签“{_tag}”";
-
-        public Task RedoAsync()
+        protected override void Apply(FileTagItem file)
         {
-            foreach (var f in _files)
-            {
-                if (!f.Tags.Contains(_tag))
-                    f.Tags.Add(_tag);
-            }
-            return Task.CompletedTask;
+            if (!file.Tags.Contains(Tag))
+                file.Tags.Add(Tag);
         }
 
-        public Task UndoAsync()
+        protected override void Revert(FileTagItem file)
         {
-            foreach (var f in _files)
-                f.Tags.Remove(_tag);
-            return Task.CompletedTask;
+            file.Tags.Remove(Tag);
+        }
+
+        public override string Description
+        {
+            get { return $"添加标签“{Tag}”"; }
         }
     }
 
-    // ==================== 移除标签 ====================
-    public class RemoveTagCommand : IUndoableCommand
+    /// <summary>从一组文件中移除同一个标签。</summary>
+    public class RemoveTagCommand : TagToggleCommand
     {
-        private readonly List<FileTagItem> _files;
-        private readonly string _tag;
-
         public RemoveTagCommand(IEnumerable<FileTagItem> files, string tag)
+            : base(files, tag) { }
+
+        protected override bool NeedsChange(FileTagItem file)
         {
-            _tag = tag;
-            // 只记录原本有该标签的文件
-            _files = files.Where(f => f.Tags.Contains(tag)).ToList();
+            return file.Tags.Contains(Tag);
         }
 
-        public string Description => $"移除标签“{_tag}”";
-
-        public Task RedoAsync()
+        protected override void Apply(FileTagItem file)
         {
-            foreach (var f in _files)
-                f.Tags.Remove(_tag);
-            return Task.CompletedTask;
+            file.Tags.Remove(Tag);
         }
 
-        public Task UndoAsync()
+        protected override void Revert(FileTagItem file)
         {
-            foreach (var f in _files)
-            {
-                if (!f.Tags.Contains(_tag))
-                    f.Tags.Add(_tag);
-            }
-            return Task.CompletedTask;
+            if (!file.Tags.Contains(Tag))
+                file.Tags.Add(Tag);
+        }
+
+        public override string Description
+        {
+            get { return $"移除标签“{Tag}”"; }
         }
     }
 
-    // ==================== 添加文件记录 ====================
+    // ============================================================
+    //  文件记录：添加 / 删除
+    // ============================================================
+
+    /// <summary>添加若干文件记录。</summary>
     public class AddFilesCommand : IUndoableCommand
     {
         private readonly List<FileTagItem> _files;
@@ -81,7 +261,10 @@ namespace Tagmgr
             _files = files.ToList();
         }
 
-        public string Description => $"添加 {_files.Count} 个文件记录";
+        public string Description
+        {
+            get { return $"添加 {_files.Count} 个文件记录"; }
+        }
 
         public Task RedoAsync()
         {
@@ -101,7 +284,10 @@ namespace Tagmgr
         }
     }
 
-    // ==================== 删除文件记录 ====================
+    /// <summary>
+    /// 删除若干文件记录（不触碰磁盘文件）。
+    /// 记录每项在集合中的原始索引，撤销时恢复到原来的位置。
+    /// </summary>
     public class DeleteFilesCommand : IUndoableCommand
     {
         private readonly List<(int Index, FileTagItem Item)> _items;
@@ -116,29 +302,37 @@ namespace Tagmgr
                 .ToList();
         }
 
-        public string Description => $"删除 {_items.Count} 个文件记录";
+        public string Description
+        {
+            get { return $"删除 {_items.Count} 个文件记录"; }
+        }
 
         public Task RedoAsync()
         {
             // 倒序删除，避免索引偏移
-            foreach (var (_, item) in _items.OrderByDescending(t => t.Index))
-                DataService.FileItems.Remove(item);
+            foreach (var tuple in _items.OrderByDescending(t => t.Index))
+                DataService.FileItems.Remove(tuple.Item);
             return Task.CompletedTask;
         }
 
         public Task UndoAsync()
         {
-            foreach (var (index, item) in _items)
+            foreach (var tuple in _items)
             {
-                if (DataService.FileItems.Contains(item)) continue;
-                var clamped = Math.Min(index, DataService.FileItems.Count);
-                DataService.FileItems.Insert(clamped, item);
+                if (DataService.FileItems.Contains(tuple.Item)) continue;
+
+                var index = Math.Min(tuple.Index, DataService.FileItems.Count);
+                DataService.FileItems.Insert(index, tuple.Item);
             }
             return Task.CompletedTask;
         }
     }
 
-    // ==================== 重命名标签 ====================
+    // ============================================================
+    //  标签：重命名 / 删除 / 合并 / 修改颜色
+    // ============================================================
+
+    /// <summary>重命名标签，所有拥有旧标签的文件都替换为新标签。</summary>
     public class RenameTagCommand : IUndoableCommand
     {
         private readonly string _oldName;
@@ -164,7 +358,10 @@ namespace Tagmgr
             _newNameOldColor = DataService.GetTagColor(newName);
         }
 
-        public string Description => $"重命名“{_oldName}”为“{_newName}”";
+        public string Description
+        {
+            get { return $"重命名“{_oldName}”为“{_newName}”"; }
+        }
 
         public Task RedoAsync()
         {
@@ -202,7 +399,7 @@ namespace Tagmgr
         }
     }
 
-    // ==================== 删除标签 ====================
+    /// <summary>删除若干标签，从所有文件中移除这些标签。</summary>
     public class DeleteTagsCommand : IUndoableCommand
     {
         private readonly List<string> _names;
@@ -222,7 +419,10 @@ namespace Tagmgr
             }
         }
 
-        public string Description => $"删除 {_names.Count} 个标签";
+        public string Description
+        {
+            get { return $"删除 {_names.Count} 个标签"; }
+        }
 
         public Task RedoAsync()
         {
@@ -256,7 +456,7 @@ namespace Tagmgr
         }
     }
 
-    // ==================== 合并标签 ====================
+    /// <summary>把若干标签合并到一个目标标签。</summary>
     public class MergeTagsCommand : IUndoableCommand
     {
         private readonly List<string> _sourceNames;
@@ -284,7 +484,10 @@ namespace Tagmgr
                 _beforeTags[f] = f.Tags.ToList();
         }
 
-        public string Description => $"合并 {_sourceNames.Count} 个标签到“{_targetName}”";
+        public string Description
+        {
+            get { return $"合并 {_sourceNames.Count} 个标签到“{_targetName}”"; }
+        }
 
         public Task RedoAsync()
         {
@@ -301,12 +504,20 @@ namespace Tagmgr
                     f.Tags.Add(_targetName);
             }
 
-            // 颜色迁移
+            // 颜色迁移：目标没有颜色时，从源标签继承一个
             if (string.IsNullOrEmpty(_targetOldColor))
             {
-                var sourceColor = _sourceNames
-                    .Select(n => _sourceColors.TryGetValue(n, out var c) ? c : null)
-                    .FirstOrDefault(c => !string.IsNullOrEmpty(c));
+                string? sourceColor = null;
+                foreach (var name in _sourceNames)
+                {
+                    if (_sourceColors.TryGetValue(name, out var c) &&
+                        !string.IsNullOrEmpty(c))
+                    {
+                        sourceColor = c;
+                        break;
+                    }
+                }
+
                 if (!string.IsNullOrEmpty(sourceColor))
                     DataService.SetTagColor(_targetName, sourceColor);
             }
@@ -334,7 +545,7 @@ namespace Tagmgr
         }
     }
 
-    // ==================== 修改标签颜色 ====================
+    /// <summary>修改标签颜色。</summary>
     public class ChangeTagColorCommand : IUndoableCommand
     {
         private readonly string _tagName;
@@ -348,7 +559,10 @@ namespace Tagmgr
             _newColor = newColor;
         }
 
-        public string Description => $"修改“{_tagName}”的颜色";
+        public string Description
+        {
+            get { return $"修改“{_tagName}”的颜色"; }
+        }
 
         public Task RedoAsync()
         {

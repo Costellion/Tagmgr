@@ -23,7 +23,7 @@ namespace Tagmgr
         public string Name { get; set; } = "";
         public int Count { get; set; }
         public string CountText => $"{Count} 个文件";
-        public SolidColorBrush BackgroundBrush => TagColorHelper.GetBackgroundBrush(Name);
+        public SolidColorBrush BackgroundBrush => UiService.GetTagBackgroundBrush(Name);
     }
 
     public static class DataService

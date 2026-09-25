@@ -168,7 +168,7 @@ namespace Tagmgr
 
             var picker = new ColorPicker
             {
-                Color = TagColorHelper.ParseHex(currentHex),
+                Color = UiService.ParseColorHex(currentHex),
                 IsAlphaEnabled = false,
                 IsColorChannelTextInputVisible = true,
                 IsHexInputVisible = true,
@@ -193,7 +193,7 @@ namespace Tagmgr
             if (result == ContentDialogResult.Primary)
             {
                 await UndoService.ExecuteAsync(
-                    new ChangeTagColorCommand(tagName, TagColorHelper.ToHex(picker.Color)));
+                    new ChangeTagColorCommand(tagName, UiService.ToHex(picker.Color)));
             }
             else if (result == ContentDialogResult.Secondary)
             {

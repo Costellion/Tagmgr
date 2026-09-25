@@ -342,7 +342,7 @@ namespace Tagmgr
                 FileListView.SelectedItems.Add(item);
             }
 
-            var menu = ContextMenuHelper.BuildFileMenu();
+            var menu = UiService.BuildFileMenu();
 
             foreach (var mfi in menu.Items.OfType<MenuFlyoutItem>())
             {
@@ -363,23 +363,23 @@ namespace Tagmgr
 
             switch (action)
             {
-                case ContextMenuHelper.ActionOpen:
+                case UiService.ActionOpen:
                     await OpenFileAsync(selected[0]);
                     break;
 
-                case ContextMenuHelper.ActionOpenFolder:
+                case UiService.ActionOpenFolder:
                     OpenContainingFolder(selected[0]);
                     break;
 
-                case ContextMenuHelper.ActionCopyPath:
+                case UiService.ActionCopyPath:
                     CopyToClipboard(selected.Select(f => f.FilePath));
                     break;
 
-                case ContextMenuHelper.ActionCopyName:
+                case UiService.ActionCopyName:
                     CopyToClipboard(selected.Select(f => f.FileName));
                     break;
 
-                case ContextMenuHelper.ActionDelete:
+                case UiService.ActionDelete:
                     await DeleteSelectedAsync(selected);
                     break;
             }

@@ -196,7 +196,7 @@ namespace Tagmgr
             if (sender is not FrameworkElement fe) return;
             if (fe.DataContext is not FileTagItem item) return;
 
-            var menu = ContextMenuHelper.BuildReadOnlyFileMenu();
+            var menu = UiService.BuildReadOnlyFileMenu();
 
             foreach (var mfi in menu.Items.OfType<MenuFlyoutItem>())
             {
@@ -214,19 +214,19 @@ namespace Tagmgr
         {
             switch (action)
             {
-                case ContextMenuHelper.ActionOpen:
+                case UiService.ActionOpen:
                     await OpenFileAsync(item);
                     break;
 
-                case ContextMenuHelper.ActionOpenFolder:
+                case UiService.ActionOpenFolder:
                     OpenContainingFolder(item);
                     break;
 
-                case ContextMenuHelper.ActionCopyPath:
+                case UiService.ActionCopyPath:
                     CopyToClipboard(item.FilePath);
                     break;
 
-                case ContextMenuHelper.ActionCopyName:
+                case UiService.ActionCopyName:
                     CopyToClipboard(item.FileName);
                     break;
             }
