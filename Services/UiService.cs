@@ -24,7 +24,7 @@ namespace Tagmgr
         //  对话框
         // ============================================================
 
-        /// <summary>显示一条提示信息。</summary>
+        //显示一条提示信息
         public static async Task ShowMessageAsync(XamlRoot root, string message)
         {
             if (root == null) return;
@@ -39,8 +39,7 @@ namespace Tagmgr
 
             await dialog.ShowAsync();
         }
-
-        /// <summary>显示确认对话框，用户点“确定”返回 true。</summary>
+        //显示确认对话框，确认返回true
         public static async Task<bool> ShowConfirmAsync(XamlRoot root, string message)
         {
             if (root == null) return false;
@@ -58,8 +57,7 @@ namespace Tagmgr
             var result = await dialog.ShowAsync();
             return result == ContentDialogResult.Primary;
         }
-
-        /// <summary>显示输入对话框，用户取消返回 null。</summary>
+        //显示输入对话框，取消返回null
         public static async Task<string?> ShowInputAsync(
             XamlRoot root, string prompt, string defaultText)
         {
@@ -96,12 +94,11 @@ namespace Tagmgr
 
             return null;
         }
-
         // ============================================================
         //  文件操作
         // ============================================================
 
-        /// <summary>用系统默认程序打开文件。</summary>
+        //用默认程序打开文件
         public static async Task OpenFileAsync(XamlRoot root, FileTagItem item)
         {
             if (item == null) return;
@@ -121,7 +118,7 @@ namespace Tagmgr
             }
         }
 
-        /// <summary>打开文件所在文件夹，并选中该文件。</summary>
+        //打开文件所在文件夹，并选中该文件
         public static async Task OpenContainingFolderAsync(XamlRoot root, FileTagItem item)
         {
             if (item == null) return;
@@ -152,7 +149,7 @@ namespace Tagmgr
         //  剪贴板
         // ============================================================
 
-        /// <summary>把一段文本放进剪贴板。</summary>
+        //把一段文本放进剪贴板
         public static void CopyToClipboard(string text)
         {
             if (string.IsNullOrEmpty(text)) return;
@@ -162,7 +159,7 @@ namespace Tagmgr
             Clipboard.SetContent(dp);
         }
 
-        /// <summary>把若干行文本按行放进剪贴板。</summary>
+        //把一堆文本按行放进剪贴板
         public static void CopyToClipboard(IEnumerable<string> lines)
         {
             var text = string.Join(Environment.NewLine, lines);
@@ -177,10 +174,8 @@ namespace Tagmgr
         private static readonly Color DefaultTagBackground =
             Color.FromArgb(0xFF, 0xE5, 0xE5, 0xE5);
 
-        /// <summary>
-        /// 根据标签名返回一个带透明度的背景刷，让文字仍然可读。
-        /// 未设置颜色的标签返回默认灰。
-        /// </summary>
+        // 根据标签名返回一个带透明度的背景刷，让文字仍然可读。
+        // 未设置颜色的标签返回默认灰。
         public static SolidColorBrush GetTagBackgroundBrush(string tagName)
         {
             if (string.IsNullOrEmpty(tagName))
@@ -202,7 +197,7 @@ namespace Tagmgr
             }
         }
 
-        /// <summary>解析 #RRGGBB 或 #AARRGGBB。</summary>
+        //解析 #RRGGBB 或 #AARRGGBB
         public static Color ParseColorHex(string hex)
         {
             hex = hex.TrimStart('#');
@@ -228,7 +223,7 @@ namespace Tagmgr
             throw new FormatException("无效的颜色格式");
         }
 
-        /// <summary>Color 转 #RRGGBB。</summary>
+        //Color 转 #RRGGBB
         public static string ToHex(Color color)
         {
             return $"#{color.R:X2}{color.G:X2}{color.B:X2}";
@@ -245,7 +240,7 @@ namespace Tagmgr
         public const string ActionCopyName = "CopyName";
         public const string ActionDelete = "Delete";
 
-        /// <summary>构建文件项的可写右键菜单。</summary>
+        //构建文件项的可写右键菜单
         public static MenuFlyout BuildFileMenu()
         {
             var menu = new MenuFlyout();
@@ -261,7 +256,7 @@ namespace Tagmgr
             return menu;
         }
 
-        /// <summary>构建只读视图的文件右键菜单（不含删除）。</summary>
+        //构建只读视图的文件右键菜单（不含删除）
         public static MenuFlyout BuildReadOnlyFileMenu()
         {
             var menu = new MenuFlyout();
@@ -290,10 +285,8 @@ namespace Tagmgr
         }
     }
 
-    /// <summary>
-    /// XAML 转换器：把字符串（标签名）转成背景刷。
-    /// 保留在全局资源里，由 App.xaml 注册。
-    /// </summary>
+    // XAML 转换器：把字符串（标签名）转成背景刷。
+    // 保留在全局资源里，由 App.xaml 注册。
     public class TagColorConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, string language)

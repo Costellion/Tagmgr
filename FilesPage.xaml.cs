@@ -174,7 +174,7 @@ namespace Tagmgr
 
             if (selected.Count == 0)
             {
-                await ShowMessageAsync("请先在左侧选中至少一个文件。");
+                await UiService.ShowMessageAsync(RootGrid.XamlRoot,"请先在左侧选中至少一个文件。");
                 return;
             }
 
@@ -253,7 +253,7 @@ namespace Tagmgr
 
             if (selected.Count == 0)
             {
-                await ShowMessageAsync("请先在左侧选中至少一个文件。");
+                await UiService.ShowMessageAsync(RootGrid.XamlRoot,"请先在左侧选中至少一个文件。");
                 return;
             }
 
@@ -311,24 +311,7 @@ namespace Tagmgr
             if (sender is not FrameworkElement fe) return;
             if (fe.DataContext is not FileTagItem item) return;
 
-            await OpenFileAsync(item);
-        }
-
-        private async Task OpenFileAsync(FileTagItem item)
-        {
-            try
-            {
-                var file = await StorageFile.GetFileFromPathAsync(item.FilePath);
-                var ok = await Launcher.LaunchFileAsync(file);
-
-                if (!ok)
-                    await ShowMessageAsync("系统没有可用来打开该文件的程序。");
-            }
-            catch (Exception ex)
-            {
-                await ShowMessageAsync(
-                    $"无法打开文件：{ex.Message}\n路径：{item.FilePath}");
-            }
+            await UiService.OpenFileAsync(RootGrid.XamlRoot, item);
         }
 
         private void FileItem_RightTapped(object sender, RightTappedRoutedEventArgs e)
@@ -364,19 +347,19 @@ namespace Tagmgr
             switch (action)
             {
                 case UiService.ActionOpen:
-                    await OpenFileAsync(selected[0]);
+                    await UiService.OpenFileAsync(RootGrid.XamlRoot, selected[0]);
                     break;
 
                 case UiService.ActionOpenFolder:
-                    OpenContainingFolder(selected[0]);
+                    await UiService.OpenContainingFolderAsync(RootGrid.XamlRoot, selected[0]);
                     break;
 
                 case UiService.ActionCopyPath:
-                    CopyToClipboard(selected.Select(f => f.FilePath));
+                    UiService.CopyToClipboard(selected.Select(f => f.FilePath));
                     break;
 
                 case UiService.ActionCopyName:
-                    CopyToClipboard(selected.Select(f => f.FileName));
+                    UiService.CopyToClipboard(selected.Select(f => f.FileName));
                     break;
 
                 case UiService.ActionDelete:
@@ -384,41 +367,6 @@ namespace Tagmgr
                     break;
             }
         }
-
-        private void OpenContainingFolder(FileTagItem item)
-        {
-            try
-            {
-                var folder = Path.GetDirectoryName(item.FilePath);
-                if (string.IsNullOrEmpty(folder) || !Directory.Exists(folder))
-                {
-                    _ = ShowMessageAsync($"文件夹不存在：\n{folder}");
-                    return;
-                }
-
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = "explorer.exe",
-                    Arguments = $"/select,\"{item.FilePath}\"",
-                    UseShellExecute = true
-                });
-            }
-            catch (Exception ex)
-            {
-                _ = ShowMessageAsync($"无法打开文件夹：{ex.Message}");
-            }
-        }
-
-        private void CopyToClipboard(IEnumerable<string> lines)
-        {
-            var text = string.Join(Environment.NewLine, lines);
-            if (string.IsNullOrEmpty(text)) return;
-
-            var dp = new DataPackage();
-            dp.SetText(text);
-            Clipboard.SetContent(dp);
-        }
-
         // ==================== 快捷键 ====================
 
         private void OnFocusSearch(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
@@ -453,7 +401,7 @@ namespace Tagmgr
             if (item == null) return;
 
             args.Handled = true;
-            await OpenFileAsync(item);
+            await UiService.OpenFileAsync(RootGrid.XamlRoot, item);
         }
 
         private async void OnUndo(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
@@ -466,20 +414,6 @@ namespace Tagmgr
         {
             args.Handled = true;
             await UndoService.RedoAsync();
-        }
-
-        // ==================== 提示框 ====================
-
-        private async Task ShowMessageAsync(string message)
-        {
-            var dialog = new ContentDialog
-            {
-                Title = "提示",
-                Content = message,
-                CloseButtonText = "确定",
-                XamlRoot = RootGrid.XamlRoot
-            };
-            await dialog.ShowAsync();
         }
     }
 }

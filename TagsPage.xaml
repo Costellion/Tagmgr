@@ -14,7 +14,7 @@
         <KeyboardAccelerator Key="Z" Modifiers="Control" Invoked="OnUndo"/>
         <KeyboardAccelerator Key="Y" Modifiers="Control" Invoked="OnRedo"/>
     </Page.KeyboardAccelerators>
-    <Grid>
+    <Grid x:Name="RootGrid" Padding="16">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="240"/>
             <ColumnDefinition Width="*"/>

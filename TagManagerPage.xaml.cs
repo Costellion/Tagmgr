@@ -70,13 +70,13 @@ namespace Tagmgr
 
             if (selected.Count == 0)
             {
-                await ShowMessageAsync("请先选中一个标签。");
+                await UiService.ShowMessageAsync(RootGrid.XamlRoot,"请先选中一个标签。");
                 return;
             }
 
             if (selected.Count > 1)
             {
-                await ShowMessageAsync("重命名一次只能操作一个标签。若要处理多个标签，请使用“合并”。");
+                await UiService.ShowMessageAsync(RootGrid.XamlRoot,"重命名一次只能操作一个标签。若要处理多个标签，请使用“合并”。");
                 return;
             }
 
@@ -89,7 +89,7 @@ namespace Tagmgr
 
             if (selected.Count == 0)
             {
-                await ShowMessageAsync("请先选中至少一个标签。");
+                await UiService.ShowMessageAsync(RootGrid.XamlRoot,"请先选中至少一个标签。");
                 return;
             }
 
@@ -102,12 +102,12 @@ namespace Tagmgr
 
             if (selected.Count < 2)
             {
-                await ShowMessageAsync("请至少选中两个标签进行合并。");
+                await UiService.ShowMessageAsync(RootGrid.XamlRoot,"请至少选中两个标签进行合并。");
                 return;
             }
 
             var names = string.Join("、", selected.Select(t => t.Name));
-            var target = await ShowInputAsync(
+            var target = await UiService.ShowInputAsync(RootGrid.XamlRoot,
                 $"将以下标签合并为一个新标签：\n\n{names}\n\n请输入目标标签名：",
                 selected[0].Name);
 
@@ -130,7 +130,7 @@ namespace Tagmgr
 
         private async Task RenameTagAsync(string oldTag)
         {
-            var newName = await ShowInputAsync(
+            var newName = await UiService.ShowInputAsync(RootGrid.XamlRoot,
                 $"将标签“{oldTag}”重命名为：", oldTag);
 
             if (string.IsNullOrWhiteSpace(newName)) return;
@@ -142,7 +142,7 @@ namespace Tagmgr
 
             if (targetExists)
             {
-                var ok = await ShowConfirmAsync(
+                var ok = await UiService.ShowConfirmAsync(RootGrid.XamlRoot,
                     $"标签“{newName}”已存在，重命名会把“{oldTag}”合并到该标签中。是否继续？");
                 if (!ok) return;
             }
@@ -155,7 +155,7 @@ namespace Tagmgr
             if (names.Count == 0) return;
 
             var namesText = string.Join("、", names);
-            var ok = await ShowConfirmAsync(
+            var ok = await UiService.ShowConfirmAsync(RootGrid.XamlRoot,
                 $"确定要从所有文件中删除以下标签吗？\n\n{namesText}\n\n此操作可撤销。");
             if (!ok) return;
 
@@ -302,68 +302,6 @@ namespace Tagmgr
         {
             args.Handled = true;
             await UndoService.RedoAsync();
-        }
-
-        // ==================== 对话框 ====================
-
-        private async Task<string?> ShowInputAsync(string prompt, string defaultText)
-        {
-            var input = new TextBox
-            {
-                Text = defaultText,
-                SelectionStart = 0,
-                SelectionLength = defaultText.Length
-            };
-
-            var dialog = new ContentDialog
-            {
-                Title = "输入",
-                Content = new StackPanel
-                {
-                    Spacing = 8,
-                    Children =
-                    {
-                        new TextBlock { Text = prompt, TextWrapping = TextWrapping.Wrap },
-                        input
-                    }
-                },
-                PrimaryButtonText = "确定",
-                CloseButtonText = "取消",
-                DefaultButton = ContentDialogButton.Primary,
-                XamlRoot = this.XamlRoot
-            };
-
-            var result = await dialog.ShowAsync();
-            return result == ContentDialogResult.Primary ? input.Text : null;
-        }
-
-        private async Task<bool> ShowConfirmAsync(string message)
-        {
-            var dialog = new ContentDialog
-            {
-                Title = "确认",
-                Content = message,
-                PrimaryButtonText = "确定",
-                CloseButtonText = "取消",
-                DefaultButton = ContentDialogButton.Primary,
-                XamlRoot = this.XamlRoot
-            };
-
-            var result = await dialog.ShowAsync();
-            return result == ContentDialogResult.Primary;
-        }
-
-        private async Task ShowMessageAsync(string message)
-        {
-            var dialog = new ContentDialog
-            {
-                Title = "提示",
-                Content = message,
-                CloseButtonText = "确定",
-                XamlRoot = this.XamlRoot
-            };
-
-            await dialog.ShowAsync();
-        }
+        }     
     }
 }
