@@ -5,8 +5,15 @@
     xmlns:local="using:Tagmgr"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d">
-
+    mc:Ignorable="d"
+    KeyboardAcceleratorPlacementMode="Hidden">
+    <Page.KeyboardAccelerators>
+        <KeyboardAccelerator Key="F" Modifiers="Control" Invoked="OnFocusSearch"/>
+        <KeyboardAccelerator Key="A" Modifiers="Control" Invoked="OnSelectAll"/>
+        <KeyboardAccelerator Key="Enter" Invoked="OnEnterKey"/>
+        <KeyboardAccelerator Key="Z" Modifiers="Control" Invoked="OnUndo"/>
+        <KeyboardAccelerator Key="Y" Modifiers="Control" Invoked="OnRedo"/>
+    </Page.KeyboardAccelerators>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="240"/>
@@ -82,7 +89,7 @@
                 x:Name="FilteredFileListView"
                 Grid.Row="1"
                 Visibility="Collapsed"
-                SelectionMode="None">
+                SelectionMode="Single">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="local:FileTagItem">
                         <Grid Margin="0,6"

@@ -19,9 +19,9 @@ namespace Tagmgr
 {
     public sealed partial class FilesPage : Page
     {
-        // 指向 DataService 的共享集合
         public ObservableCollection<FileTagItem> FileItems => DataService.FileItems;
         public ObservableCollection<FileTagItem> DisplayItems { get; } = new();
+
         private FileSortMode CurrentSortMode
         {
             get
@@ -34,12 +34,15 @@ namespace Tagmgr
                 return FileSortMode.NameAsc;
             }
         }
+
         public FilesPage()
         {
             this.InitializeComponent();
             SortComboBox.SelectedIndex = 0;
         }
-        // 按搜索文本+ 排序方式重建 DisplayItems
+
+        // ==================== 刷新 ====================
+
         private void RefreshDisplay()
         {
             var query = SearchBox?.Text?.Trim() ?? "";
@@ -56,7 +59,6 @@ namespace Tagmgr
             source = DataService.ApplySort(source, CurrentSortMode);
             var result = source.ToList();
 
-            // 保留原有选中项
             var selected = FileListView.SelectedItems
                 .OfType<FileTagItem>()
                 .ToHashSet();
@@ -65,22 +67,24 @@ namespace Tagmgr
             foreach (var item in result)
                 DisplayItems.Add(item);
 
-            // 恢复选中
             foreach (var item in result)
             {
                 if (selected.Contains(item))
                     FileListView.SelectedItems.Add(item);
             }
         }
+
         private async void Page_Loaded(object sender, RoutedEventArgs e)
         {
             await DataService.EnsureLoadedAsync();
 
-            // 订阅共享集合变化，增删时同步刷新显示
+            // 订阅共享集合与数据变化事件
             DataService.FileItems.CollectionChanged -= FileItems_CollectionChanged;
             DataService.FileItems.CollectionChanged += FileItems_CollectionChanged;
 
-            // 为已有记录加载图标
+            DataService.DataChanged -= OnDataChanged;
+            DataService.DataChanged += OnDataChanged;
+
             var tasks = FileItems
                  .Select(item => item.LoadMetadataAsync())
                  .ToList();
@@ -95,7 +99,13 @@ namespace Tagmgr
             RefreshDisplay();
         }
 
-        // 选择文件
+        private void OnDataChanged()
+        {
+            DispatcherQueue.TryEnqueue(RefreshDisplay);
+        }
+
+        // ==================== 选择文件 ====================
+
         private async void PickFile_Click(object sender, RoutedEventArgs e)
         {
             var picker = new FileOpenPicker();
@@ -117,51 +127,42 @@ namespace Tagmgr
                 if (FileItems.Any(x => x.FilePath == file.Path))
                     continue;
 
-                var item = new FileTagItem { FilePath = file.Path };
-                FileItems.Add(item);
-                newItems.Add(item);
+                newItems.Add(new FileTagItem { FilePath = file.Path });
             }
 
-            // 加载新文件的元数据，加载完后再刷新一次排序
+            if (newItems.Count == 0) return;
+
             await Task.WhenAll(newItems.Select(i => i.LoadMetadataAsync()));
 
-            RefreshDisplay();
-            await DataService.SaveAsync();
+            await UndoService.ExecuteAsync(new AddFilesCommand(newItems));
         }
-        // 排序方式切换
+
+        // ==================== 搜索 / 排序 ====================
+
         private void SortComboBox_SelectionChanged(
             object sender,
             SelectionChangedEventArgs e)
         {
             RefreshDisplay();
         }
-        // 搜索框内容变化
+
         private void SearchBox_TextChanged(
             AutoSuggestBox sender,
             AutoSuggestBoxTextChangedEventArgs args)
         {
-            // 只处理用户输入，忽略程序赋值
             if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput)
                 return;
 
             RefreshDisplay();
         }
-        // 获取当前窗口（用于 FileOpenPicker 初始化）
-        private Window GetWindow()
-        {
-            // 在 WinUI 3 里，Page 没有直接暴露 Window，
-            // 通过 App 保存的引用或 XamlRoot 拿到
-            return ((App)Application.Current).MainWindow!;
-        }
 
-        // 添加标签
-        // 点击“添加标签”按钮
+        // ==================== 标签操作 ====================
+
         private async void AddTag_Click(object sender, RoutedEventArgs e)
         {
             await AddTagAsync(TagInput.Text);
         }
 
-        // 供按钮和自动补全共用
         private async Task AddTagAsync(string? rawTag)
         {
             var tag = (rawTag ?? "").Trim();
@@ -177,18 +178,17 @@ namespace Tagmgr
                 return;
             }
 
-            foreach (var item in selected)
+            // 检查是否真的有变化
+            if (!selected.Any(f => !f.Tags.Contains(tag)))
             {
-                if (!item.Tags.Contains(tag))
-                    item.Tags.Add(tag);
+                TagInput.Text = "";
+                return;
             }
 
+            await UndoService.ExecuteAsync(new AddTagCommand(selected, tag));
             TagInput.Text = "";
-            await DataService.SaveAsync();
-            RefreshDisplay();
         }
 
-        // 自动补全：输入时提示已有标签
         private void TagInput_TextChanged(
             AutoSuggestBox sender,
             AutoSuggestBoxTextChangedEventArgs args)
@@ -218,7 +218,6 @@ namespace Tagmgr
             sender.ItemsSource = all;
         }
 
-        // 用户从下拉里选了一个标签
         private void TagInput_SuggestionChosen(
             AutoSuggestBox sender,
             AutoSuggestBoxSuggestionChosenEventArgs args)
@@ -227,7 +226,6 @@ namespace Tagmgr
                 sender.Text = tag;
         }
 
-        // 用户按回车，或点击下拉里的项并回车
         private async void TagInput_QuerySubmitted(
             AutoSuggestBox sender,
             AutoSuggestBoxQuerySubmittedEventArgs args)
@@ -239,11 +237,18 @@ namespace Tagmgr
             await AddTagAsync(tag);
         }
 
-        //移除标签
         private async void RemoveTag_Click(object sender, RoutedEventArgs e)
         {
+            await RemoveTagAsync(TagInput.Text);
+        }
+
+        private async Task RemoveTagAsync(string? rawTag)
+        {
+            var tag = (rawTag ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(tag)) return;
+
             var selected = FileListView.SelectedItems
-                .Cast<FileTagItem>()
+                .OfType<FileTagItem>()
                 .ToList();
 
             if (selected.Count == 0)
@@ -252,17 +257,16 @@ namespace Tagmgr
                 return;
             }
 
-            var tag = TagInput.Text.Trim();
-            if (string.IsNullOrWhiteSpace(tag)) return;
+            if (!selected.Any(f => f.Tags.Contains(tag)))
+            {
+                TagInput.Text = "";
+                return;
+            }
 
-            foreach (var item in selected)
-                item.Tags.Remove(tag);
-            
+            await UndoService.ExecuteAsync(new RemoveTagCommand(selected, tag));
             TagInput.Text = "";
-            await DataService.SaveAsync();
-            RefreshDisplay();
         }
-        //移除单个标签
+
         private async void RemoveTagChip_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not Button btn) return;
@@ -270,8 +274,6 @@ namespace Tagmgr
             var tag = btn.Tag as string;
             if (string.IsNullOrEmpty(tag)) return;
 
-            // 找到这个 chip 所属的文件
-            // 从视觉树往上找 ListViewItem
             var element = btn as FrameworkElement;
             while (element != null && element is not ListViewItem)
                 element = VisualTreeHelper.GetParent(element) as FrameworkElement;
@@ -279,27 +281,31 @@ namespace Tagmgr
             if (element is not ListViewItem lvi) return;
             if (lvi.Content is not FileTagItem item) return;
 
-            if (item.Tags.Remove(tag))
-                await DataService.SaveAsync();
-            RefreshDisplay();
+            if (!item.Tags.Contains(tag)) return;
+
+            await UndoService.ExecuteAsync(
+                new RemoveTagCommand(new[] { item }, tag));
         }
-        //移除选中文件
+
+        // ==================== 删除文件记录 ====================
+
         private async void DeleteFile_Click(object sender, RoutedEventArgs e)
         {
-            // 先复制一份，避免遍历时修改集合
             var selected = FileListView.SelectedItems
-                .Cast<FileTagItem>()
+                .OfType<FileTagItem>()
                 .ToList();
 
-            if (selected.Count == 0) return;
-
-            foreach (var item in selected)
-                FileItems.Remove(item);
-
-            await DataService.SaveAsync();
-            //RefreshDisplay();
+            await DeleteSelectedAsync(selected);
         }
-        // 双击文件项打开文件
+
+        private async Task DeleteSelectedAsync(List<FileTagItem> selected)
+        {
+            if (selected.Count == 0) return;
+            await UndoService.ExecuteAsync(new DeleteFilesCommand(selected));
+        }
+
+        // ==================== 打开 / 右键 ====================
+
         private async void FileItem_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
             if (sender is not FrameworkElement fe) return;
@@ -308,7 +314,6 @@ namespace Tagmgr
             await OpenFileAsync(item);
         }
 
-        // 打开文件的实际逻辑，双击和右键菜单共用
         private async Task OpenFileAsync(FileTagItem item)
         {
             try
@@ -325,12 +330,12 @@ namespace Tagmgr
                     $"无法打开文件：{ex.Message}\n路径：{item.FilePath}");
             }
         }
+
         private void FileItem_RightTapped(object sender, RightTappedRoutedEventArgs e)
         {
             if (sender is not FrameworkElement fe) return;
             if (fe.DataContext is not FileTagItem item) return;
 
-            // 被右键的项如果不在选中列表里，先把选中切到它
             if (!FileListView.SelectedItems.Contains(item))
             {
                 FileListView.SelectedItems.Clear();
@@ -339,7 +344,6 @@ namespace Tagmgr
 
             var menu = ContextMenuHelper.BuildFileMenu();
 
-            // 给每个菜单项挂统一的动作处理器
             foreach (var mfi in menu.Items.OfType<MenuFlyoutItem>())
             {
                 if (mfi.Tag is string action)
@@ -349,7 +353,6 @@ namespace Tagmgr
             menu.ShowAt(fe, e.GetPosition(fe));
         }
 
-        // 统一处理右键菜单的动作
         private async Task HandleFileMenuActionAsync(string action)
         {
             var selected = FileListView.SelectedItems
@@ -361,7 +364,6 @@ namespace Tagmgr
             switch (action)
             {
                 case ContextMenuHelper.ActionOpen:
-                    // “打开文件”只作用于被右键的那一个
                     await OpenFileAsync(selected[0]);
                     break;
 
@@ -383,7 +385,6 @@ namespace Tagmgr
             }
         }
 
-        // 打开所在文件夹并选中文件
         private void OpenContainingFolder(FileTagItem item)
         {
             try
@@ -408,7 +409,6 @@ namespace Tagmgr
             }
         }
 
-        // 把若干行文本放进剪贴板
         private void CopyToClipboard(IEnumerable<string> lines)
         {
             var text = string.Join(Environment.NewLine, lines);
@@ -419,18 +419,57 @@ namespace Tagmgr
             Clipboard.SetContent(dp);
         }
 
-        // 删除记录（不删除磁盘文件）
-        private async Task DeleteSelectedAsync(List<FileTagItem> selected)
+        // ==================== 快捷键 ====================
+
+        private void OnFocusSearch(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
         {
-            if (selected.Count == 0) return;
-
-            foreach (var item in selected)
-                FileItems.Remove(item);
-
-            await DataService.SaveAsync();
-            // CollectionChanged 会自动触发 RefreshDisplay
+            SearchBox.Focus(FocusState.Programmatic);
+            args.Handled = true;
         }
-        // 简单提示框
+
+        private void OnSelectAll(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            FileListView.SelectAll();
+            args.Handled = true;
+        }
+
+        private async void OnDeleteKey(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            args.Handled = true;
+
+            var selected = FileListView.SelectedItems
+                .OfType<FileTagItem>()
+                .ToList();
+
+            await DeleteSelectedAsync(selected);
+        }
+
+        private async void OnEnterKey(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            var item = FileListView.SelectedItems
+                .OfType<FileTagItem>()
+                .FirstOrDefault();
+
+            if (item == null) return;
+
+            args.Handled = true;
+            await OpenFileAsync(item);
+        }
+
+        private async void OnUndo(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            args.Handled = true;
+            await UndoService.UndoAsync();
+        }
+
+        private async void OnRedo(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            args.Handled = true;
+            await UndoService.RedoAsync();
+        }
+
+        // ==================== 提示框 ====================
+
         private async Task ShowMessageAsync(string message)
         {
             var dialog = new ContentDialog

@@ -16,7 +16,6 @@ namespace Tagmgr
 {
     public sealed partial class TagsPage : Page
     {
-        // 当前排序方式
         private FileSortMode CurrentSortMode
         {
             get
@@ -33,8 +32,6 @@ namespace Tagmgr
         public TagsPage()
         {
             this.InitializeComponent();
-
-            // 设置默认排序
             SortComboBox.SelectedIndex = 0;
         }
 
@@ -44,14 +41,39 @@ namespace Tagmgr
 
             await DataService.EnsureLoadedAsync();
 
-            // 确保所有文件的元数据（图标 + 修改时间）已加载
+            DataService.DataChanged -= OnDataChanged;
+            DataService.DataChanged += OnDataChanged;
+
             var tasks = DataService.FileItems
                 .Select(item => item.LoadMetadataAsync())
                 .ToList();
 
             await Task.WhenAll(tasks);
 
-            // 重建标签列表
+            RebuildTagList();
+
+            if (SearchBox != null)
+                SearchBox.Text = "";
+
+            RefreshFilteredFiles();
+        }
+
+        private void OnDataChanged()
+        {
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                RebuildTagList();
+                RefreshFilteredFiles();
+            });
+        }
+
+        // 重建左侧标签列表，保留原有选中项
+        private void RebuildTagList()
+        {
+            var selectedTags = TagListView.SelectedItems
+                .Cast<string>()
+                .ToHashSet();
+
             var tags = DataService.FileItems
                 .SelectMany(f => f.Tags)
                 .Distinct()
@@ -60,15 +82,15 @@ namespace Tagmgr
 
             TagListView.ItemsSource = tags;
 
-            // 清空搜索框（赋值会触发 TextChanged，但 Reason 是 ProgrammaticChange，会被忽略）
-            if (SearchBox != null)
-                SearchBox.Text = "";
-
-            // 重置右侧状态
-            RefreshFilteredFiles();
+            foreach (var t in tags)
+            {
+                if (selectedTags.Contains(t))
+                    TagListView.SelectedItems.Add(t);
+            }
         }
 
-        // 搜索框输入
+        // ==================== 事件 ====================
+
         private void SearchBox_TextChanged(
             AutoSuggestBox sender,
             AutoSuggestBoxTextChangedEventArgs args)
@@ -79,7 +101,6 @@ namespace Tagmgr
             RefreshFilteredFiles();
         }
 
-        // 排序方式切换
         private void SortComboBox_SelectionChanged(
             object sender,
             SelectionChangedEventArgs e)
@@ -87,7 +108,6 @@ namespace Tagmgr
             RefreshFilteredFiles();
         }
 
-        // 标签选择变化
         private void TagListView_SelectionChanged(
             object sender,
             SelectionChangedEventArgs e)
@@ -95,7 +115,6 @@ namespace Tagmgr
             RefreshFilteredFiles();
         }
 
-        // 根据已选标签 + 搜索文本 + 排序方式重建结果列表
         private void RefreshFilteredFiles()
         {
             var selectedTags = TagListView.SelectedItems
@@ -104,7 +123,6 @@ namespace Tagmgr
 
             var query = SearchBox?.Text?.Trim() ?? "";
 
-            // 没有任何筛选条件：显示空状态提示
             if (selectedTags.Count == 0 && string.IsNullOrEmpty(query))
             {
                 FilteredFileListView.ItemsSource = null;
@@ -116,11 +134,9 @@ namespace Tagmgr
 
             IEnumerable<FileTagItem> source = DataService.FileItems;
 
-            // 按标签交集过滤
             if (selectedTags.Count > 0)
                 source = source.Where(f => selectedTags.All(t => f.Tags.Contains(t)));
 
-            // 按搜索文本过滤
             if (!string.IsNullOrEmpty(query))
             {
                 source = source.Where(f =>
@@ -129,7 +145,6 @@ namespace Tagmgr
                     f.Tags.Any(t => t.Contains(query, StringComparison.OrdinalIgnoreCase)));
             }
 
-            // 应用排序
             source = DataService.ApplySort(source, CurrentSortMode);
 
             var result = source.ToList();
@@ -149,7 +164,8 @@ namespace Tagmgr
             }
         }
 
-        // 双击文件项打开文件
+        // ==================== 打开 / 右键 ====================
+
         private async void FileItem_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
         {
             if (sender is not FrameworkElement fe) return;
@@ -158,7 +174,6 @@ namespace Tagmgr
             await OpenFileAsync(item);
         }
 
-        // 打开文件，双击和右键共用
         private async Task OpenFileAsync(FileTagItem item)
         {
             try
@@ -176,7 +191,6 @@ namespace Tagmgr
             }
         }
 
-        // 右键点击文件项：这里的列表是只读视图，菜单只有只读操作
         private void FileItem_RightTapped(object sender, RightTappedRoutedEventArgs e)
         {
             if (sender is not FrameworkElement fe) return;
@@ -196,7 +210,6 @@ namespace Tagmgr
             menu.ShowAt(fe, e.GetPosition(fe));
         }
 
-        // 处理只读文件菜单的动作
         private async Task HandleFileMenuActionAsync(string action, FileTagItem item)
         {
             switch (action)
@@ -219,7 +232,6 @@ namespace Tagmgr
             }
         }
 
-        // 打开所在文件夹并选中该文件
         private void OpenContainingFolder(FileTagItem item)
         {
             try
@@ -252,7 +264,47 @@ namespace Tagmgr
             dp.SetText(text);
             Clipboard.SetContent(dp);
         }
-        // 简单提示框
+
+        // ==================== 快捷键 ====================
+
+        private void OnFocusSearch(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            SearchBox.Focus(FocusState.Programmatic);
+            args.Handled = true;
+        }
+
+        private void OnSelectAll(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            FilteredFileListView.SelectAll();
+            args.Handled = true;
+        }
+
+        private async void OnEnterKey(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            var item = FilteredFileListView.SelectedItems
+                .OfType<FileTagItem>()
+                .FirstOrDefault();
+
+            if (item == null) return;
+
+            args.Handled = true;
+            await OpenFileAsync(item);
+        }
+
+        private async void OnUndo(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            args.Handled = true;
+            await UndoService.UndoAsync();
+        }
+
+        private async void OnRedo(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            args.Handled = true;
+            await UndoService.RedoAsync();
+        }
+
+        // ==================== 提示框 ====================
+
         private async Task ShowMessageAsync(string message)
         {
             var dialog = new ContentDialog

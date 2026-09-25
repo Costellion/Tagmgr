@@ -67,7 +67,12 @@ namespace Tagmgr
         {
             return _loadTask ??= LoadAsync();
         }
+        public static event Action? DataChanged;
 
+        public static void NotifyDataChanged()
+        {
+            DataChanged?.Invoke();
+        }
         private static string ConnectionString => $"Data Source={_dbFile};Pooling=False";
 
         // ---------------- 加载 ----------------
@@ -410,7 +415,10 @@ namespace Tagmgr
 
                 _loadTask = null;
                 await EnsureLoadedAsync();
+                _loadTask = null;
+                await EnsureLoadedAsync();
 
+                UndoService.Clear();   // ← 新增：导入后清空撤销历史
                 return true;
             }
             catch (Exception ex)

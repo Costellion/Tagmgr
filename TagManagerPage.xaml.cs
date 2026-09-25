@@ -18,7 +18,16 @@ namespace Tagmgr
         private async void Page_Loaded(object sender, RoutedEventArgs e)
         {
             await DataService.EnsureLoadedAsync();
+
+            DataService.DataChanged -= OnDataChanged;
+            DataService.DataChanged += OnDataChanged;
+
             RefreshTags();
+        }
+
+        private void OnDataChanged()
+        {
+            DispatcherQueue.TryEnqueue(RefreshTags);
         }
 
         // 重新统计所有标签
@@ -53,7 +62,8 @@ namespace Tagmgr
             RefreshTags();
         }
 
-        // 重命名：把所有文件中的旧标签替换为新标签
+        // ==================== 按钮 ====================
+
         private async void Rename_Click(object sender, RoutedEventArgs e)
         {
             var selected = TagListView.SelectedItems.OfType<TagInfo>().ToList();
@@ -73,7 +83,6 @@ namespace Tagmgr
             await RenameTagAsync(selected[0].Name);
         }
 
-        // 删除按钮
         private async void Delete_Click(object sender, RoutedEventArgs e)
         {
             var selected = TagListView.SelectedItems.OfType<TagInfo>().ToList();
@@ -87,85 +96,6 @@ namespace Tagmgr
             await DeleteTagsAsync(selected.Select(t => t.Name).ToList());
         }
 
-        // 真正执行重命名
-        private async Task RenameTagAsync(string oldTag)
-        {
-            var newName = await ShowInputAsync(
-                $"将标签“{oldTag}”重命名为：", oldTag);
-
-            if (string.IsNullOrWhiteSpace(newName)) return;
-            newName = newName.Trim();
-            if (newName == oldTag) return;
-
-            bool targetExists = DataService.FileItems
-                .Any(f => f.Tags.Contains(newName));
-
-            if (targetExists)
-            {
-                var ok = await ShowConfirmAsync(
-                    $"标签“{newName}”已存在，重命名会把“{oldTag}”合并到该标签中。是否继续？");
-                if (!ok) return;
-            }
-
-            int changed = 0;
-            foreach (var file in DataService.FileItems)
-            {
-                if (file.Tags.Contains(oldTag))
-                {
-                    file.Tags.Remove(oldTag);
-                    if (!file.Tags.Contains(newName))
-                        file.Tags.Add(newName);
-                    changed++;
-                }
-            }
-
-            // 颜色迁移
-            var oldColor = DataService.GetTagColor(oldTag);
-            if (!string.IsNullOrEmpty(oldColor) &&
-                string.IsNullOrEmpty(DataService.GetTagColor(newName)))
-            {
-                DataService.SetTagColor(newName, oldColor);
-            }
-            DataService.SetTagColor(oldTag, null);
-
-            if (changed > 0 || !string.IsNullOrEmpty(oldColor))
-            {
-                await DataService.SaveAsync();
-                RefreshTags();
-            }
-            else
-            {
-                await ShowMessageAsync("没有文件使用该标签。");
-            }
-        }
-
-        // 真正执行删除
-        private async Task DeleteTagsAsync(IReadOnlyCollection<string> names)
-        {
-            if (names.Count == 0) return;
-
-            var namesText = string.Join("、", names);
-            var ok = await ShowConfirmAsync(
-                $"确定要从所有文件中删除以下标签吗？\n\n{namesText}\n\n此操作不可撤销。");
-            if (!ok) return;
-
-            var namesSet = names.ToHashSet();
-
-            foreach (var file in DataService.FileItems)
-            {
-                foreach (var name in namesSet)
-                    file.Tags.Remove(name);
-            }
-
-            // 同时清除颜色
-            foreach (var name in namesSet)
-                DataService.SetTagColor(name, null);
-
-            await DataService.SaveAsync();
-            RefreshTags();
-        }
-
-        // 合并：把选中的多个标签统一替换为一个目标标签
         private async void Merge_Click(object sender, RoutedEventArgs e)
         {
             var selected = TagListView.SelectedItems.OfType<TagInfo>().ToList();
@@ -185,24 +115,9 @@ namespace Tagmgr
             target = target.Trim();
 
             var oldNames = selected.Select(t => t.Name).ToList();
-
-            foreach (var file in DataService.FileItems)
-            {
-                bool changed = false;
-                foreach (var oldName in oldNames)
-                {
-                    if (file.Tags.Remove(oldName))
-                        changed = true;
-                }
-
-                if (changed && !file.Tags.Contains(target))
-                    file.Tags.Add(target);
-            }
-
-            await DataService.SaveAsync();
-            RefreshTags();
+            await UndoService.ExecuteAsync(new MergeTagsCommand(oldNames, target));
         }
-        // 颜色块按钮
+
         private async void ChangeColor_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not Button btn || btn.Tag is not string tagName)
@@ -211,7 +126,42 @@ namespace Tagmgr
             await ShowColorPickerForTagAsync(tagName);
         }
 
-        // 抽取出来的颜色选择逻辑，按钮和右键菜单共用
+        // ==================== 核心操作 ====================
+
+        private async Task RenameTagAsync(string oldTag)
+        {
+            var newName = await ShowInputAsync(
+                $"将标签“{oldTag}”重命名为：", oldTag);
+
+            if (string.IsNullOrWhiteSpace(newName)) return;
+            newName = newName.Trim();
+            if (newName == oldTag) return;
+
+            bool targetExists = DataService.FileItems
+                .Any(f => f.Tags.Contains(newName));
+
+            if (targetExists)
+            {
+                var ok = await ShowConfirmAsync(
+                    $"标签“{newName}”已存在，重命名会把“{oldTag}”合并到该标签中。是否继续？");
+                if (!ok) return;
+            }
+
+            await UndoService.ExecuteAsync(new RenameTagCommand(oldTag, newName));
+        }
+
+        private async Task DeleteTagsAsync(IReadOnlyCollection<string> names)
+        {
+            if (names.Count == 0) return;
+
+            var namesText = string.Join("、", names);
+            var ok = await ShowConfirmAsync(
+                $"确定要从所有文件中删除以下标签吗？\n\n{namesText}\n\n此操作可撤销。");
+            if (!ok) return;
+
+            await UndoService.ExecuteAsync(new DeleteTagsCommand(names));
+        }
+
         private async Task ShowColorPickerForTagAsync(string tagName)
         {
             var currentHex = DataService.GetTagColor(tagName) ?? "#E5E5E5";
@@ -242,26 +192,23 @@ namespace Tagmgr
 
             if (result == ContentDialogResult.Primary)
             {
-                DataService.SetTagColor(tagName, TagColorHelper.ToHex(picker.Color));
-                await DataService.SaveTagColorsAsync();
-                RefreshTags();
+                await UndoService.ExecuteAsync(
+                    new ChangeTagColorCommand(tagName, TagColorHelper.ToHex(picker.Color)));
             }
             else if (result == ContentDialogResult.Secondary)
             {
-                DataService.SetTagColor(tagName, null);
-                await DataService.SaveTagColorsAsync();
-                RefreshTags();
+                await UndoService.ExecuteAsync(
+                    new ChangeTagColorCommand(tagName, null));
             }
         }
 
-        // 右键点击标签项
+        // ==================== 右键 ====================
+
         private void TagItem_RightTapped(object sender, RightTappedRoutedEventArgs e)
         {
             if (sender is not FrameworkElement fe) return;
             if (fe.DataContext is not TagInfo info) return;
 
-            // 本次菜单的操作目标：优先用已有的多选集合；
-            // 若被右键的项不在其中，则只用它自己
             var selectedNames = TagListView.SelectedItems
                 .OfType<TagInfo>()
                 .Select(t => t.Name)
@@ -272,17 +219,14 @@ namespace Tagmgr
 
             var menu = new MenuFlyout();
 
-            // 设置颜色（只对右键的那一个）
             var colorItem = new MenuFlyoutItem { Text = "设置颜色..." };
             colorItem.Icon = new FontIcon { Glyph = "\uE790" };
             colorItem.Click += async (s, args) => await ShowColorPickerForTagAsync(info.Name);
 
-            // 重命名（只对右键的那一个）
             var renameItem = new MenuFlyoutItem { Text = "重命名..." };
             renameItem.Icon = new FontIcon { Glyph = "\uE8AC" };
             renameItem.Click += async (s, args) => await RenameTagAsync(info.Name);
 
-            // 删除（作用于整个目标集合）
             var deleteItem = new MenuFlyoutItem { Text = "删除" };
             deleteItem.Icon = new FontIcon { Glyph = "\uE74D" };
             deleteItem.Click += async (s, args) => await DeleteTagsAsync(selectedNames.ToList());
@@ -291,7 +235,6 @@ namespace Tagmgr
             menu.Items.Add(renameItem);
             menu.Items.Add(deleteItem);
 
-            // 合并到... 子菜单
             var others = DataService.FileItems
                 .SelectMany(f => f.Tags)
                 .Distinct()
@@ -311,7 +254,10 @@ namespace Tagmgr
                     var targetName = target;
                     var mi = new MenuFlyoutItem { Text = targetName };
                     mi.Click += async (s, args) =>
-                        await MergeTagsIntoAsync(selectedNames, targetName);
+                    {
+                        await UndoService.ExecuteAsync(
+                            new MergeTagsCommand(selectedNames, targetName));
+                    };
                     mergeSub.Items.Add(mi);
                 }
 
@@ -319,54 +265,46 @@ namespace Tagmgr
             }
 
             menu.ShowAt(fe, e.GetPosition(fe));
-            e.Handled = true;   // 阻止 ListView 的默认右键行为覆盖菜单
+            e.Handled = true;
         }
 
-        // 把当前选中的所有标签合并到指定目标
-        private async Task MergeTagsIntoAsync(
-    IReadOnlyCollection<string> sourceNames,
-    string targetTag)
+        // ==================== 快捷键 ====================
+
+        private void OnFocusSearch(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
         {
-            if (sourceNames.Count == 0) return;
-            if (sourceNames.Contains(targetTag)) return;
-
-            // 颜色迁移：目标没颜色时，用源标签里第一个有颜色的
-            var targetColor = DataService.GetTagColor(targetTag);
-            string? sourceColor = null;
-
-            if (string.IsNullOrEmpty(targetColor))
-            {
-                sourceColor = sourceNames
-                    .Select(n => DataService.GetTagColor(n))
-                    .FirstOrDefault(c => !string.IsNullOrEmpty(c));
-            }
-
-            // 合并标签
-            foreach (var file in DataService.FileItems)
-            {
-                bool changed = false;
-                foreach (var oldName in sourceNames)
-                {
-                    if (file.Tags.Remove(oldName))
-                        changed = true;
-                }
-
-                if (changed && !file.Tags.Contains(targetTag))
-                    file.Tags.Add(targetTag);
-            }
-
-            // 颜色迁移
-            if (string.IsNullOrEmpty(targetColor) && !string.IsNullOrEmpty(sourceColor))
-                DataService.SetTagColor(targetTag, sourceColor);
-
-            foreach (var oldName in sourceNames)
-                DataService.SetTagColor(oldName, null);
-
-            await DataService.SaveTagColorsAsync();
-            RefreshTags();
+            SearchBox.Focus(FocusState.Programmatic);
+            args.Handled = true;
         }
 
-        // ---------- 对话框 ----------
+        private void OnSelectAll(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            TagListView.SelectAll();
+            args.Handled = true;
+        }
+
+        private async void OnDeleteKey(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            args.Handled = true;
+
+            var selected = TagListView.SelectedItems.OfType<TagInfo>().ToList();
+            if (selected.Count == 0) return;
+
+            await DeleteTagsAsync(selected.Select(t => t.Name).ToList());
+        }
+
+        private async void OnUndo(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            args.Handled = true;
+            await UndoService.UndoAsync();
+        }
+
+        private async void OnRedo(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+        {
+            args.Handled = true;
+            await UndoService.RedoAsync();
+        }
+
+        // ==================== 对话框 ====================
 
         private async Task<string?> ShowInputAsync(string prompt, string defaultText)
         {
