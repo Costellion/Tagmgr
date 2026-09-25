@@ -72,6 +72,7 @@ namespace Tagmgr
                 if (selected.Contains(item))
                     FileListView.SelectedItems.Add(item);
             }
+            UpdateStatusBar();
         }
 
         private async void Page_Loaded(object sender, RoutedEventArgs e)
@@ -415,5 +416,61 @@ namespace Tagmgr
             args.Handled = true;
             await UndoService.RedoAsync();
         }
+        // ==================== 状态栏 ====================
+
+        private void FileListView_SelectionChanged(
+            object sender, SelectionChangedEventArgs e)
+        {
+            UpdateStatusBar();
+        }
+
+        private void UpdateStatusBar()
+        {
+            var total = DataService.FileItems.Count;
+            var shown = DisplayItems.Count;
+            var selected = FileListView.SelectedItems.Count;
+
+            StatusBarText.Text =
+                $"共 {total} 个文件，当前显示 {shown} 个，选中 {selected} 个";
+        }
+        // ==================== 拖拽添加 ====================
+
+        private void RootGrid_DragOver(object sender, DragEventArgs e)
+        {
+            if (e.DataView.Contains(StandardDataFormats.StorageItems))
+            {
+                e.AcceptedOperation = DataPackageOperation.Copy;
+                if (e.DragUIOverride != null)
+                    e.DragUIOverride.Caption = "添加文件";
+            }
+        }
+
+        private async void RootGrid_Drop(object sender, DragEventArgs e)
+        {
+            if (!e.DataView.Contains(StandardDataFormats.StorageItems))
+                return;
+
+            var storageItems = await e.DataView.GetStorageItemsAsync();
+            var newItems = new List<FileTagItem>();
+
+            foreach (var item in storageItems)
+            {
+                var file = item as StorageFile;
+                if (file == null) continue;
+
+                // 已存在的不重复添加
+                if (DataService.FileItems.Any(x => x.FilePath == file.Path))
+                    continue;
+
+                newItems.Add(new FileTagItem { FilePath = file.Path });
+            }
+
+            if (newItems.Count == 0) return;
+
+            await Task.WhenAll(newItems.Select(i => i.LoadMetadataAsync()));
+
+            await UndoService.ExecuteAsync(new AddFilesCommand(newItems));
+        }
+
     }
 }

@@ -129,6 +129,7 @@ namespace Tagmgr
                 FilteredFileListView.Visibility = Visibility.Collapsed;
                 EmptyHint.Text = "请从左侧选择一个或多个标签，查看同时拥有这些标签的文件（双击可打开）";
                 EmptyHint.Visibility = Visibility.Visible;
+                UpdateStatusBar();
                 return;
             }
 
@@ -162,6 +163,7 @@ namespace Tagmgr
                 FilteredFileListView.Visibility = Visibility.Visible;
                 EmptyHint.Visibility = Visibility.Collapsed;
             }
+            UpdateStatusBar();
         }
 
         // ==================== 打开 / 右键 ====================
@@ -251,6 +253,88 @@ namespace Tagmgr
         {
             args.Handled = true;
             await UndoService.RedoAsync();
+        }
+        // ==================== 状态栏 ====================
+
+        private void FilteredFileListView_SelectionChanged(
+            object sender, SelectionChangedEventArgs e)
+        {
+            UpdateStatusBar();
+        }
+
+        private void UpdateStatusBar()
+        {
+            var total = DataService.FileItems.Count;
+            var shown = FilteredFileListView.Items.Count;
+            var selected = FilteredFileListView.SelectedItems.Count;
+
+            StatusBarText.Text =
+                $"共 {total} 个文件，当前显示 {shown} 个，选中 {selected} 个";
+        }
+        // ==================== 拖拽添加（带标签） ====================
+
+        private void RootGrid_DragOver(object sender, DragEventArgs e)
+        {
+            if (e.DataView.Contains(StandardDataFormats.StorageItems))
+            {
+                e.AcceptedOperation = DataPackageOperation.Copy;
+
+                var selectedTags = TagListView.SelectedItems.Cast<string>().ToList();
+                if (e.DragUIOverride != null)
+                {
+                    e.DragUIOverride.Caption = selectedTags.Count > 0
+                        ? $"添加并打上 {selectedTags.Count} 个标签"
+                        : "添加文件";
+                }
+            }
+        }
+
+        private async void RootGrid_Drop(object sender, DragEventArgs e)
+        {
+            if (!e.DataView.Contains(StandardDataFormats.StorageItems))
+                return;
+
+            var storageItems = await e.DataView.GetStorageItemsAsync();
+
+            // 拖入时左侧选中的标签，会应用到所有新添加的文件上
+            var selectedTags = TagListView.SelectedItems.Cast<string>().ToList();
+
+            var newItems = new List<FileTagItem>();
+
+            foreach (var item in storageItems)
+            {
+                var file = item as StorageFile;
+                if (file == null) continue;
+
+                var existing = DataService.FileItems
+                    .FirstOrDefault(x => x.FilePath == file.Path);
+
+                if (existing != null)
+                {
+                    foreach (var tag in selectedTags)
+                    {
+                        if (!existing.Tags.Contains(tag))
+                        {
+                            await UndoService.ExecuteAsync(
+                                new AddTagCommand(new[] { existing }, tag));
+                        }
+                    }
+                    continue;
+                }
+
+                var newItem = new FileTagItem { FilePath = file.Path };
+
+                foreach (var tag in selectedTags)
+                    newItem.Tags.Add(tag);
+
+                newItems.Add(newItem);
+            }
+
+            if (newItems.Count == 0) return;
+
+            await Task.WhenAll(newItems.Select(i => i.LoadMetadataAsync()));
+
+            await UndoService.ExecuteAsync(new AddFilesCommand(newItems));
         }
     }
 }

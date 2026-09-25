@@ -16,11 +16,16 @@
         <KeyboardAccelerator Key="Z" Modifiers="Control" Invoked="OnUndo"/>
         <KeyboardAccelerator Key="Y" Modifiers="Control" Invoked="OnRedo"/>
     </Page.KeyboardAccelerators>
-    <Grid x:Name="RootGrid">
+    <Grid x:Name="RootGrid"
+          AllowDrop="True"
+          DragOver="RootGrid_DragOver"
+          Background="Transparent"
+          Drop="RootGrid_Drop">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <Grid.ColumnDefinitions>
@@ -36,6 +41,7 @@
             FontSize="20"
             FontWeight="SemiBold"
             Margin="16,12"/>
+
         <!-- 搜索框 -->
         <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="16,0,16,8">
             <Grid.ColumnDefinitions>
@@ -44,31 +50,33 @@
             </Grid.ColumnDefinitions>
 
             <AutoSuggestBox
-            x:Name="SearchBox"
-            Grid.Column="0"
-            PlaceholderText="搜索文件名、路径或标签..."
-            QueryIcon="Find"
-            TextChanged="SearchBox_TextChanged"/>
+                x:Name="SearchBox"
+                Grid.Column="0"
+                PlaceholderText="搜索文件名、路径或标签..."
+                QueryIcon="Find"
+                TextChanged="SearchBox_TextChanged"/>
 
             <ComboBox
-            x:Name="SortComboBox"
-            Grid.Column="1"
-            Margin="8,0,0,0"
-            MinWidth="170"
-            SelectionChanged="SortComboBox_SelectionChanged">
+                x:Name="SortComboBox"
+                Grid.Column="1"
+                Margin="8,0,0,0"
+                MinWidth="170"
+                SelectionChanged="SortComboBox_SelectionChanged">
                 <ComboBoxItem Content="名称 A-Z" Tag="NameAsc"/>
                 <ComboBoxItem Content="名称 Z-A" Tag="NameDesc"/>
                 <ComboBoxItem Content="修改时间（新→旧）" Tag="ModifiedDesc"/>
                 <ComboBoxItem Content="修改时间（旧→新）" Tag="ModifiedAsc"/>
             </ComboBox>
         </Grid>
+
         <!-- 左侧：文件列表 -->
         <ListView
             x:Name="FileListView"
             Grid.Row="2"
             Grid.Column="0"
-            Margin="16,0,8,16"
+            Margin="16,0,8,8"
             SelectionMode="Extended"
+            SelectionChanged="FileListView_SelectionChanged"
             ItemsSource="{x:Bind DisplayItems}">
 
             <ListView.ItemTemplate>
@@ -81,31 +89,29 @@
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- 文件图标 -->
                         <Image
                             Grid.Column="0"
                             Source="{x:Bind Icon, Mode=OneWay}"
                             Width="24"
                             Height="24"
                             Margin="0,2,10,0"
-                        VerticalAlignment="Top"/>
+                            VerticalAlignment="Top"/>
 
-                        <!-- 文件信息 + 标签 -->
                         <StackPanel Grid.Column="1">
                             <TextBlock
-                        Text="{x:Bind FileName}"
-                        FontWeight="SemiBold"
-                        TextTrimming="CharacterEllipsis"/>
+                                Text="{x:Bind FileName}"
+                                FontWeight="SemiBold"
+                                TextTrimming="CharacterEllipsis"/>
 
                             <TextBlock
-                        Text="{x:Bind FilePath}"
-                        Foreground="Gray"
-                        FontSize="12"
-                        TextTrimming="CharacterEllipsis"/>
+                                Text="{x:Bind FilePath}"
+                                Foreground="Gray"
+                                FontSize="12"
+                                TextTrimming="CharacterEllipsis"/>
 
                             <ItemsControl
-                        ItemsSource="{x:Bind Tags}"
-                        Margin="0,4,0,0">
+                                ItemsSource="{x:Bind Tags}"
+                                Margin="0,4,0,0">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <StackPanel Orientation="Horizontal"/>
@@ -131,7 +137,7 @@
                                                     Background="Transparent"
                                                     BorderThickness="0"
                                                     Tag="{Binding}"
-                                                Click="RemoveTagChip_Click"/>
+                                                    Click="RemoveTagChip_Click"/>
                                             </StackPanel>
                                         </Border>
                                     </DataTemplate>
@@ -147,7 +153,7 @@
         <StackPanel
             Grid.Row="2"
             Grid.Column="1"
-            Margin="8,0,16,16"
+            Margin="8,0,16,8"
             Spacing="10">
 
             <Button
@@ -178,9 +184,18 @@
                 Click="DeleteFile_Click"/>
 
             <TextBlock
-                Text="提示：先在左侧选中一个文件，再添加或移除标签。"
+                Text="提示：可把文件从资源管理器拖入此窗口添加。"
                 TextWrapping="Wrap"
                 Foreground="Gray"/>
         </StackPanel>
+
+        <!-- 状态栏 -->
+        <TextBlock
+            x:Name="StatusBarText"
+            Grid.Row="3"
+            Grid.ColumnSpan="2"
+            Margin="16,4,16,8"
+            Foreground="Gray"
+            FontSize="12"/>
     </Grid>
 </Page>

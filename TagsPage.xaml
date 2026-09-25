@@ -14,14 +14,24 @@
         <KeyboardAccelerator Key="Z" Modifiers="Control" Invoked="OnUndo"/>
         <KeyboardAccelerator Key="Y" Modifiers="Control" Invoked="OnRedo"/>
     </Page.KeyboardAccelerators>
-    <Grid x:Name="RootGrid" Padding="16">
+
+    <Grid x:Name="RootGrid"
+          AllowDrop="True"
+          DragOver="RootGrid_DragOver"
+          Background="Transparent"
+          Drop="RootGrid_Drop">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="240"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
         <!-- 左侧：所有标签 -->
-        <StackPanel Grid.Column="0" Padding="16,12">
+        <StackPanel Grid.Row="0" Grid.Column="0" Padding="16,12">
             <TextBlock
                 Text="所有标签"
                 FontSize="20"
@@ -47,12 +57,12 @@
         </StackPanel>
 
         <!-- 右侧：过滤后的文件 -->
-        <Grid Grid.Column="1" Padding="8,12,16,12">
+        <Grid Grid.Row="0" Grid.Column="1" Padding="8,12,16,12" Background="Transparent">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            
+
             <Grid Grid.Row="0" Margin="0,0,0,12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -77,6 +87,7 @@
                     <ComboBoxItem Content="修改时间（旧→新）" Tag="ModifiedAsc"/>
                 </ComboBox>
             </Grid>
+
             <TextBlock
                 x:Name="EmptyHint"
                 Grid.Row="1"
@@ -89,7 +100,8 @@
                 x:Name="FilteredFileListView"
                 Grid.Row="1"
                 Visibility="Collapsed"
-                SelectionMode="Single">
+                SelectionMode="Single"
+                SelectionChanged="FilteredFileListView_SelectionChanged">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="local:FileTagItem">
                         <Grid Margin="0,6"
@@ -102,19 +114,19 @@
                             <Image Grid.Column="0" Source="{x:Bind Icon, Mode=OneWay}" Width="24" Height="24" Margin="0,2,10,0" VerticalAlignment="Top"/>
                             <StackPanel Grid.Column="1">
                                 <TextBlock
-                Text="{x:Bind FileName}"
-                FontWeight="SemiBold"
-                TextTrimming="CharacterEllipsis"/>
+                                    Text="{x:Bind FileName}"
+                                    FontWeight="SemiBold"
+                                    TextTrimming="CharacterEllipsis"/>
 
                                 <TextBlock
-                Text="{x:Bind FilePath}"
-                Foreground="Gray"
-                FontSize="12"
-                TextTrimming="CharacterEllipsis"/>
+                                    Text="{x:Bind FilePath}"
+                                    Foreground="Gray"
+                                    FontSize="12"
+                                    TextTrimming="CharacterEllipsis"/>
 
                                 <ItemsControl
-                ItemsSource="{x:Bind Tags}"
-                Margin="0,4,0,0">
+                                    ItemsSource="{x:Bind Tags}"
+                                    Margin="0,4,0,0">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
                                             <StackPanel Orientation="Horizontal"/>
@@ -139,5 +151,14 @@
                 </ListView.ItemTemplate>
             </ListView>
         </Grid>
+
+        <!-- 状态栏 -->
+        <TextBlock
+            x:Name="StatusBarText"
+            Grid.Row="1"
+            Grid.ColumnSpan="2"
+            Margin="16,4,16,8"
+            Foreground="Gray"
+            FontSize="12"/>
     </Grid>
 </Page>
