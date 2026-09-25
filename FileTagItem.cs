@@ -42,7 +42,14 @@ namespace Tagmgr
         // 是否已尝试加载过元数据，避免重复加载
         [JsonIgnore]
         public bool MetadataLoaded { get; private set; }
-
+        // 文件是否失联（被移动、重命名或删除）
+        private bool _isMissing;
+        [JsonIgnore]
+        public bool IsMissing
+        {
+            get => _isMissing;
+            private set { _isMissing = value; OnPropertyChanged(); }
+        }
         /// <summary>
         /// 异步加载文件图标与修改时间。失败时静默忽略。
         /// </summary>
@@ -70,13 +77,28 @@ namespace Tagmgr
                 // 修改时间
                 var props = await file.GetBasicPropertiesAsync();
                 ModifiedTime = props.DateModified;
+                IsMissing = false;
             }
             catch
             {
                 // 文件已被移动/删除，或没有访问权限时忽略
+                IsMissing = true;
             }
         }
-
+        public async Task<bool> CheckExistsAsync()
+        {
+            try
+            {
+                await StorageFile.GetFileFromPathAsync(FilePath);
+                IsMissing = false;
+                return true;
+            }
+            catch
+            {
+                IsMissing = true;
+                return false;
+            }
+        }
         public event PropertyChangedEventHandler? PropertyChanged;
 
         protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)

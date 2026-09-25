@@ -177,6 +177,94 @@ namespace Tagmgr
                 _ = ShowMessageAsync($"无法打开文件夹：{ex.Message}");
             }
         }
+        private async void CheckFiles_Click(object sender, RoutedEventArgs e)
+        {
+            if (CheckFilesButton.IsEnabled == false) return;
+
+            var total = DataService.FileItems.Count;
+            if (total == 0)
+            {
+                await ShowMessageAsync("当前没有任何文件记录。");
+                return;
+            }
+
+            CheckFilesButton.IsEnabled = false;
+
+            try
+            {
+                var missing = new List<FileTagItem>();
+                var sync = new object();
+
+                // 限制并发数，避免一次性同时打开过多文件句柄
+                using var throttle = new System.Threading.SemaphoreSlim(16);
+
+                var tasks = DataService.FileItems
+                    .Select(async item =>
+                    {
+                        await throttle.WaitAsync();
+                        try
+                        {
+                            var ok = await item.CheckExistsAsync();
+                            if (!ok)
+                            {
+                                lock (sync)
+                                {
+                                    missing.Add(item);
+                                }
+                            }
+                        }
+                        finally
+                        {
+                            throttle.Release();
+                        }
+                    })
+                    .ToList();
+
+                await Task.WhenAll(tasks);
+
+                if (missing.Count == 0)
+                {
+                    await ShowMessageAsync(
+                        $"检查完成。\n\n共检查 {total} 个文件记录，全部有效。");
+                    return;
+                }
+
+                // 预览前 10 个失效文件
+                var preview = string.Join(
+                    "\n",
+                    missing.Take(10).Select(f => "· " + f.FileName));
+
+                if (missing.Count > 10)
+                    preview += $"\n… 以及另外 {missing.Count - 10} 个";
+
+                var dialog = new ContentDialog
+                {
+                    Title = "发现失效文件",
+                    Content =
+                        $"共检查 {total} 个文件记录，其中 {missing.Count} 个文件已失效。\n\n" +
+                        $"{preview}\n\n" +
+                        "是否清理这些失效记录？清理不会删除磁盘上的任何文件，且可以撤销。",
+                    PrimaryButtonText = $"清理 {missing.Count} 条记录",
+                    CloseButtonText = "保留",
+                    DefaultButton = ContentDialogButton.Close,
+                    XamlRoot = this.XamlRoot
+                };
+
+                var result = await dialog.ShowAsync();
+
+                if (result == ContentDialogResult.Primary)
+                {
+                    // 走撤销服务，用户可以用 Ctrl+Z 恢复
+                    await UndoService.ExecuteAsync(new DeleteFilesCommand(missing));
+                    RefreshAll();
+                }
+            }
+            finally
+            {
+                CheckFilesButton.IsEnabled = true;
+            }
+        }
+
         private async Task ShowMessageAsync(string message)
         {
             var dialog = new ContentDialog

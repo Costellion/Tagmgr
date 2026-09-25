@@ -58,6 +58,22 @@
                 <Button Content="导入数据..." Click="ImportData_Click"/>
                 <Button Content="打开数据文件夹" Click="OpenDataFolder_Click"/>
             </StackPanel>
+            <TextBlock
+                Text="维护"
+                FontSize="16"
+                FontWeight="SemiBold"
+                Margin="0,16,0,0"/>
+
+            <TextBlock
+                Text="检查所有文件记录对应的文件是否仍然存在。失效的文件可能已被移动、重命名或删除。"
+                Foreground="Gray"
+                TextWrapping="Wrap"/>
+
+            <Button
+                x:Name="CheckFilesButton"
+                Content="检查文件状态..."
+                Click="CheckFiles_Click"
+                HorizontalAlignment="Left"/>
 
             <!-- 统计 -->
             <TextBlock
