@@ -152,7 +152,90 @@ namespace Tagmgr
 
         // ---------------- 保存（全量重写） ----------------
 
-        public static async Task SaveAsync()
+        // ---------------- 保存（防抖 + 全量重写） ----------------
+
+        // 防抖窗口：300ms 内的多次保存请求只会写一次数据库
+        private const int SaveDebounceMs = 300;
+
+        private static System.Threading.Timer? _saveTimer;
+        private static TaskCompletionSource<bool>? _pendingSaveTcs;
+        private static readonly object _saveScheduleLock = new object();
+
+        /// <summary>
+        /// 安排一次延迟保存。多次连续调用只会执行一次数据库写入。
+        /// 返回的 Task 在真正写入完成时完成。
+        /// </summary>
+        public static Task SaveAsync()
+        {
+            TaskCompletionSource<bool> tcs;
+
+            lock (_saveScheduleLock)
+            {
+                if (_pendingSaveTcs == null || _pendingSaveTcs.Task.IsCompleted)
+                    _pendingSaveTcs = new TaskCompletionSource<bool>();
+
+                tcs = _pendingSaveTcs;
+
+                if (_saveTimer != null)
+                {
+                    _saveTimer.Dispose();
+                    _saveTimer = null;
+                }
+
+                _saveTimer = new System.Threading.Timer(
+                    callback: _ => { _ = FlushSaveAsync(); },
+                    state: null,
+                    dueTime: SaveDebounceMs,
+                    period: System.Threading.Timeout.Infinite);
+            }
+
+            return tcs.Task;
+        }
+
+        /// <summary>
+        /// 跳过防抖，立即写入。用于导入 / 导出前强制落盘。
+        /// </summary>
+        public static async Task SaveImmediateAsync()
+        {
+            lock (_saveScheduleLock)
+            {
+                if (_saveTimer != null)
+                {
+                    _saveTimer.Dispose();
+                    _saveTimer = null;
+                }
+            }
+
+            await FlushSaveAsync();
+        }
+
+        // 真正执行一次写入，并把所有等待者唤醒
+        private static async Task FlushSaveAsync()
+        {
+            TaskCompletionSource<bool>? tcs;
+
+            lock (_saveScheduleLock)
+            {
+                tcs = _pendingSaveTcs;
+                _pendingSaveTcs = null;
+            }
+
+            try
+            {
+                await WriteToDatabaseAsync();
+
+                if (tcs != null)
+                    tcs.TrySetResult(true);
+            }
+            catch (Exception ex)
+            {
+                if (tcs != null)
+                    tcs.TrySetException(ex);
+            }
+        }
+
+        // 原 SaveAsync 的实现原封不动搬到这里
+        private static async Task WriteToDatabaseAsync()
         {
             await _writeLock.WaitAsync();
             try
@@ -364,7 +447,7 @@ namespace Tagmgr
 
             try
             {
-                await SaveAsync();
+                await SaveImmediateAsync();
 
                 await _writeLock.WaitAsync();
                 try
@@ -415,10 +498,8 @@ namespace Tagmgr
 
                 _loadTask = null;
                 await EnsureLoadedAsync();
-                _loadTask = null;
-                await EnsureLoadedAsync();
 
-                UndoService.Clear();   // ← 新增：导入后清空撤销历史
+                UndoService.Clear();
                 return true;
             }
             catch (Exception ex)
