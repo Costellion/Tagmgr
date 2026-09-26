@@ -36,7 +36,7 @@
       EntryPoint="$targetentrypoint$" uap18:RuntimeBehavior="win32App">
       <uap:VisualElements
         DisplayName="TagManager"
-        Description="Tagmgr"
+        Description="轻量化的文件标签管理器"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Tiles\Medium\Square150x150Logo.png"
         Square44x44Logo="Assets\Logo\TagMgrLogo.png">
