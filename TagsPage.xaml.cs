@@ -70,27 +70,36 @@ namespace Tagmgr
         // 重建左侧标签列表，保留原有选中项
         private void RebuildTagList()
         {
-            var selectedTags = TagListView.SelectedItems
-                .Cast<string>()
-                .ToHashSet();
-
-            var tags = DataService.FileItems
-                .SelectMany(f => f.Tags)
-                .Distinct()
-                .OrderBy(t => t)
-                .ToList();
-
-            TagListView.ItemsSource = tags;
-
-            foreach (var t in tags)
+            _suppressSelectionRefresh = true;
+            try
             {
-                if (selectedTags.Contains(t))
-                    TagListView.SelectedItems.Add(t);
+                var selectedTags = TagListView.SelectedItems
+                    .Cast<string>()
+                    .ToHashSet();
+
+                var tags = DataService.FileItems
+                    .SelectMany(f => f.Tags)
+                    .Distinct()
+                    .OrderBy(t => t)
+                    .ToList();
+
+                TagListView.ItemsSource = tags;
+
+                foreach (var t in tags)
+                {
+                    if (selectedTags.Contains(t))
+                        TagListView.SelectedItems.Add(t);
+                }
+            }
+            finally
+            {
+                _suppressSelectionRefresh = false;
             }
         }
 
         // ==================== 事件 ====================
-
+        // 重建标签列表期间抑制 SelectionChanged，避免重复刷新
+        private bool _suppressSelectionRefresh;
         private void SearchBox_TextChanged(
             AutoSuggestBox sender,
             AutoSuggestBoxTextChangedEventArgs args)
@@ -105,6 +114,7 @@ namespace Tagmgr
             object sender,
             SelectionChangedEventArgs e)
         {
+            if (_suppressSelectionRefresh) return;
             RefreshFilteredFiles();
         }
 

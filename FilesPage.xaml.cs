@@ -80,9 +80,6 @@ namespace Tagmgr
             await DataService.EnsureLoadedAsync();
 
             // 订阅共享集合与数据变化事件
-            DataService.FileItems.CollectionChanged -= FileItems_CollectionChanged;
-            DataService.FileItems.CollectionChanged += FileItems_CollectionChanged;
-
             DataService.DataChanged -= OnDataChanged;
             DataService.DataChanged += OnDataChanged;
 
@@ -94,12 +91,6 @@ namespace Tagmgr
 
             RefreshDisplay();
         }
-
-        private void FileItems_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-        {
-            RefreshDisplay();
-        }
-
         private void OnDataChanged()
         {
             DispatcherQueue.TryEnqueue(RefreshDisplay);
