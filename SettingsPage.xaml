@@ -16,13 +16,13 @@
             HorizontalAlignment="Left">
 
             <TextBlock
-                Text="设置"
+                x:Uid="SettingsPageTitle"
                 FontSize="24"
                 FontWeight="SemiBold"/>
 
             <!-- 外观主题 -->
             <TextBlock
-                Text="外观主题"
+                x:Uid="SettingsTheme"
                 FontSize="16"
                 FontWeight="SemiBold"
                 Margin="0,8,0,0"/>
@@ -31,53 +31,73 @@
                 x:Name="ThemeComboBox"
                 MinWidth="220"
                 SelectionChanged="Theme_SelectionChanged">
-                <ComboBoxItem Content="跟随系统" Tag="Default"/>
-                <ComboBoxItem Content="浅色" Tag="Light"/>
-                <ComboBoxItem Content="深色" Tag="Dark"/>
+                <ComboBoxItem x:Uid="SettingsThemeSystem" Tag="Default"/>
+                <ComboBoxItem x:Uid="SettingsThemeLight" Tag="Light"/>
+                <ComboBoxItem x:Uid="SettingsThemeDark" Tag="Dark"/>
             </ComboBox>
-
             <!-- 数据存储 -->
             <TextBlock
-                Text="数据备份"
+                x:Uid="SettingsBackup"
                 FontSize="16"
                 FontWeight="SemiBold"
                 Margin="0,16,0,0"/>
 
             <TextBlock
-                Text="可通过下方按钮导出为备份文件，或从备份文件恢复。"
+                x:Uid="SettingsBackupTip1"
                 Foreground="Gray"
                 TextWrapping="Wrap"/>
 
             <TextBlock
-                Text="数据存储于虚拟化路径。"
+                x:Uid="SettingsBackupTip2"
                 Foreground="Gray"
                 TextWrapping="Wrap"/>
 
             <StackPanel Orientation="Horizontal" Spacing="10">
-                <Button Content="导出数据..." Click="ExportData_Click"/>
-                <Button Content="导入数据..." Click="ImportData_Click"/>
-                <Button Content="打开数据文件夹" Click="OpenDataFolder_Click"/>
+                <Button x:Uid="SettingsExportData" Click="ExportData_Click"/>
+                <Button x:Uid="SettingsImportData" Click="ImportData_Click"/>
+                <Button x:Uid="SettingsBackupDataFolder" Click="OpenDataFolder_Click"/>
             </StackPanel>
+            <!-- 语言 -->
             <TextBlock
-                Text="维护"
+                x:Uid="SettingsLanguage"
                 FontSize="16"
                 FontWeight="SemiBold"
                 Margin="0,16,0,0"/>
 
             <TextBlock
-                Text="检查所有文件记录对应的文件是否仍然存在。失效的文件可能已被移动、重命名或删除。"
+                x:Uid="SettingsLanguageTip"
+                Foreground="Gray"
+                TextWrapping="Wrap"/>
+
+            <ComboBox
+                x:Name="LanguageComboBox"
+                MinWidth="220"
+                SelectionChanged="Language_SelectionChanged">
+                <ComboBoxItem Content="跟随系统" Tag="System"/>
+                <ComboBoxItem Content="简体中文" Tag="zh-CN"/>
+                <ComboBoxItem Content="English" Tag="en-US"/>
+            </ComboBox>
+            <!-- 数据维护 -->
+            <TextBlock
+                x:Uid="SettingsMaintenance"
+                FontSize="16"
+                FontWeight="SemiBold"
+                Margin="0,16,0,0"/>
+
+            <TextBlock
+                x:Uid="SettingsMaintenanceTip"
                 Foreground="Gray"
                 TextWrapping="Wrap"/>
 
             <Button
                 x:Name="CheckFilesButton"
-                Content="检查文件状态..."
+                x:Uid="SettingsMaintenanceCheck"
                 Click="CheckFiles_Click"
                 HorizontalAlignment="Left"/>
 
             <!-- 统计 -->
             <TextBlock
-                Text="当前数据"
+                x:Uid="SettingsStatistics"
                 FontSize="16"
                 FontWeight="SemiBold"
                 Margin="0,16,0,0"/>

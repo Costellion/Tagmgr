@@ -42,6 +42,7 @@ namespace Tagmgr
                 ElementTheme.Dark => 2,
                 _ => 0
             };
+            RefreshLanguageCombo();
 
             // 数据路径（废弃）
             //DataPathText.Text = DataService.DataFile;
@@ -264,7 +265,62 @@ namespace Tagmgr
                 CheckFilesButton.IsEnabled = true;
             }
         }
+        // 根据保存的设置，选中对应的下拉项
+        private void RefreshLanguageCombo()
+        {
+            var lang = AppSettings.Language;
 
+            if (string.IsNullOrEmpty(lang))
+            {
+                LanguageComboBox.SelectedIndex = 0;   // 跟随系统
+            }
+            else if (lang.StartsWith("zh", StringComparison.OrdinalIgnoreCase))
+            {
+                LanguageComboBox.SelectedIndex = 1;   // 简体中文
+            }
+            else if (lang.StartsWith("en", StringComparison.OrdinalIgnoreCase))
+            {
+                LanguageComboBox.SelectedIndex = 2;   // English
+            }
+            else
+            {
+                LanguageComboBox.SelectedIndex = 0;
+            }
+        }
+
+        // 语言切换
+        private async void Language_SelectionChanged(
+            object sender, SelectionChangedEventArgs e)
+        {
+            if (_isInitializing) return;
+            if (LanguageComboBox.SelectedItem is not ComboBoxItem item) return;
+            if (item.Tag is not string tag) return;
+
+            // "System" 转成空字符串，表示跟随系统
+            var newLang = tag == "System" ? "" : tag;
+
+            // 没变化就不处理
+            if (newLang == AppSettings.Language) return;
+
+            AppSettings.Language = newLang;
+
+            var dialog = new ContentDialog
+            {
+                Title = "语言已更改",
+                Content = "重启应用后生效。是否立即重启？",
+                PrimaryButtonText = "立即重启",
+                CloseButtonText = "稍后",
+                DefaultButton = ContentDialogButton.Primary,
+                XamlRoot = this.XamlRoot
+            };
+
+            var result = await dialog.ShowAsync();
+
+            if (result == ContentDialogResult.Primary)
+            {
+                Microsoft.Windows.AppLifecycle.AppInstance.Restart("");
+            }
+        }
         private async Task ShowMessageAsync(string message)
         {
             var dialog = new ContentDialog

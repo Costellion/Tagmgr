@@ -15,7 +15,7 @@
 
     <NavigationView
     x:Name="NavView"
-    PaneTitle="Tagmgr"
+    x:Uid="MainNavView"
     PaneDisplayMode="Left"
     OpenPaneLength="220"
     IsBackButtonVisible="Collapsed"
@@ -23,19 +23,19 @@
     SelectionChanged="NavView_SelectionChanged">
 
         <NavigationView.MenuItems>
-            <NavigationViewItem Content="所有文件" Tag="files">
+            <NavigationViewItem x:Uid="NavFiles" Tag="files">
                 <NavigationViewItem.Icon>
                     <FontIcon Glyph="&#xE8A5;"/>
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
 
-            <NavigationViewItem Content="按标签查看" Tag="tags">
+            <NavigationViewItem x:Uid="NavTags" Tag="tags">
                 <NavigationViewItem.Icon>
                     <FontIcon Glyph="&#xE8EC;"/>
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
 
-            <NavigationViewItem Content="标签管理" Tag="tagmanager">
+            <NavigationViewItem x:Uid="NavTagManager" Tag="tagmanager">
                 <NavigationViewItem.Icon>
                     <FontIcon Glyph="&#xE8FD;"/>
                 </NavigationViewItem.Icon>
@@ -44,13 +44,13 @@
 
         <!-- 底部固定项 -->
         <NavigationView.FooterMenuItems>
-            <NavigationViewItem Content="设置" Tag="settings">
+            <NavigationViewItem x:Uid="NavSettings" Tag="settings">
                 <NavigationViewItem.Icon>
                     <FontIcon Glyph="&#xE713;"/>
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
 
-            <NavigationViewItem Content="关于" Tag="about">
+            <NavigationViewItem x:Uid="NavAbout" Tag="about">
                 <NavigationViewItem.Icon>
                     <FontIcon Glyph="&#xE946;"/>
                 </NavigationViewItem.Icon>
