@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.ApplicationModel.Resources;
 using Windows.Storage;
 using Windows.System;
 
@@ -130,14 +131,13 @@ namespace Tagmgr
             var selectedTags = TagListView.SelectedItems
                 .Cast<string>()
                 .ToList();
-
             var query = SearchBox?.Text?.Trim() ?? "";
-
+            var loader = new ResourceLoader();
             if (selectedTags.Count == 0 && string.IsNullOrEmpty(query))
             {
                 FilteredFileListView.ItemsSource = null;
                 FilteredFileListView.Visibility = Visibility.Collapsed;
-                EmptyHint.Text = "请从左侧选择一个或多个标签，查看同时拥有这些标签的文件（双击可打开）";
+                EmptyHint.Text = loader.GetString("TagsTip1/Text");
                 EmptyHint.Visibility = Visibility.Visible;
                 UpdateStatusBar();
                 return;
@@ -165,7 +165,7 @@ namespace Tagmgr
             if (result.Count == 0)
             {
                 FilteredFileListView.Visibility = Visibility.Collapsed;
-                EmptyHint.Text = "没有匹配的文件。";
+                EmptyHint.Text = loader.GetString("TagsTip2/Text");
                 EmptyHint.Visibility = Visibility.Visible;
             }
             else

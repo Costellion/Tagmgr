@@ -209,6 +209,10 @@
     <value>搜索标签……</value>
     <comment>标签管理-搜索栏</comment>
   </data>
+  <data name="TagsSearchBox.PlaceholderText" xml:space="preserve">
+    <value>在结果中搜索文件名、路径或标签...</value>
+    <comment>标签-搜索栏</comment>
+  </data>
   <data name="TagManagerColorSingle.ToolTipService.ToolTip" xml:space="preserve">
     <value>设置颜色</value>
     <comment>标签管理-标签颜色按钮</comment>
@@ -232,5 +236,33 @@
   <data name="SettingsLanguageTip.Text" xml:space="preserve">
     <value>更改语言需要重启应用才能生效。</value>
     <comment>设置-语言</comment>
+  </data>
+  <data name="TagsTitle.Text" xml:space="preserve">
+    <value>所有标签</value>
+    <comment>标签页标题</comment>
+  </data>
+  <data name="TagsSortAZ.Content" xml:space="preserve">
+    <value>名称 A-Z</value>
+    <comment>标签-排序</comment>
+  </data>
+  <data name="TagsSortZA.Content" xml:space="preserve">
+    <value>名称 Z-A</value>
+    <comment>标签-排序</comment>
+  </data>
+  <data name="TagsSortModifiedDesc.Content" xml:space="preserve">
+    <value>修改时间（新→旧）</value>
+    <comment>标签-排序</comment>
+  </data>
+  <data name="TagsSortModifiedAsc.Content" xml:space="preserve">
+    <value>修改时间（旧→新）</value>
+    <comment>标签-排序</comment>
+  </data>
+  <data name="TagsTip1.Text" xml:space="preserve">
+    <value>请从左侧选择一个或多个标签，查看同时拥有这些标签的文件（双击可打开）</value>
+    <comment>标签-空白提示</comment>
+  </data>
+  <data name="TagsTip2.Text" xml:space="preserve">
+    <value>没有匹配的文件</value>
+    <comment>标签-空白提示2</comment>
   </data>
 </root>

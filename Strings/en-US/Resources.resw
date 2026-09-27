@@ -186,6 +186,9 @@
   <data name="TagManagerSearchBox.PlaceholderText" xml:space="preserve">
     <value>Search Tags…</value>
   </data>
+  <data name="TagsSearchBox.PlaceholderText" xml:space="preserve">
+    <value>Search for file name, path, or tags in the results.</value>
+  </data>
   <data name="TagManagerColorSingle.ToolTipService.ToolTip" xml:space="preserve">
     <value>Set color</value>
   </data>
@@ -203,5 +206,26 @@
   </data>
   <data name="SettingsLanguageTip.Text" xml:space="preserve">
     <value>A restart is needed to apply changes.</value>
+  </data>
+  <data name="TagsTitle.Text" xml:space="preserve">
+    <value>All Tags</value>
+  </data>
+  <data name="TagsSortAZ.Content" xml:space="preserve">
+    <value>A-Z</value>
+  </data>
+  <data name="TagsSortZA.Content" xml:space="preserve">
+    <value>Z-A</value>
+  </data>
+  <data name="TagsSortModifiedDesc.Content" xml:space="preserve">
+    <value>Modified time(new-old)</value>
+  </data>
+  <data name="TagsSortModifiedAsc.Content" xml:space="preserve">
+    <value>Modified time(old-new)</value>
+  </data>
+  <data name="TagsTip1.Text" xml:space="preserve">
+    <value>Select one or more tags from the left to view files that have all of these tags at the same time (double-click to open)</value>
+  </data>
+  <data name="TagsTip2.Text" xml:space="preserve">
+    <value>No matching files</value>
   </data>
 </root>

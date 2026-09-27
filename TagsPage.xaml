@@ -33,7 +33,7 @@
         <!-- 左侧：所有标签 -->
         <StackPanel Grid.Row="0" Grid.Column="0" Padding="16,12">
             <TextBlock
-                Text="所有标签"
+                x:Uid="TagsTitle"
                 FontSize="20"
                 FontWeight="SemiBold"
                 Margin="0,0,0,12"/>
@@ -72,7 +72,7 @@
                 <AutoSuggestBox
                     x:Name="SearchBox"
                     Grid.Column="0"
-                    PlaceholderText="在结果中搜索文件名、路径或标签..."
+                    x:Uid="TagsSearchBox"
                     QueryIcon="Find"
                     TextChanged="SearchBox_TextChanged"/>
                 <ComboBox
@@ -81,17 +81,17 @@
                     Margin="8,0,0,0"
                     MinWidth="170"
                     SelectionChanged="SortComboBox_SelectionChanged">
-                    <ComboBoxItem Content="名称 A-Z" Tag="NameAsc"/>
-                    <ComboBoxItem Content="名称 Z-A" Tag="NameDesc"/>
-                    <ComboBoxItem Content="修改时间（新→旧）" Tag="ModifiedDesc"/>
-                    <ComboBoxItem Content="修改时间（旧→新）" Tag="ModifiedAsc"/>
+                    <ComboBoxItem x:Uid="TagsSortAZ" Tag="NameAsc"/>
+                    <ComboBoxItem x:Uid="TagsSortZA" Tag="NameDesc"/>
+                    <ComboBoxItem x:Uid="TagsSortModifiedDesc" Tag="ModifiedDesc"/>
+                    <ComboBoxItem x:Uid="TagsSortModifiedAsc" Tag="ModifiedAsc"/>
                 </ComboBox>
             </Grid>
 
             <TextBlock
                 x:Name="EmptyHint"
                 Grid.Row="1"
-                Text="请从左侧选择一个标签，查看相关文件"
+                Text="1143"
                 Foreground="Gray"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"/>
