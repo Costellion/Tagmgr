@@ -159,8 +159,38 @@
   <data name="SettingsBackupTip2.Text" xml:space="preserve">
     <value>Your data is stored in virtualization paths.</value>
   </data>
-  <data name="SettingsExportData.Content" xml:space="preserve">
-    <value>Export</value>
+  <data name="SettingsExportNotice.Text1" xml:space="preserve">
+    <value>Export successful</value>
+  </data>
+  <data name="SettingsImportNotice.Text1" xml:space="preserve">
+    <value>Confirm Import</value>
+  </data>
+  <data name="SettingsImportNotice.Text2" xml:space="preserve">
+    <value>Import successful</value>
+  </data>
+  <data name="SettingsImportNotice.Text3" xml:space="preserve">
+    <value>Importing will overwrite the current data with the selected file, and it cannot be undone.</value>
+  </data>
+  <data name="SettingsImportNotice.Text4" xml:space="preserve">
+    <value>Selected</value>
+  </data>
+  <data name="SettingsImportNotice.Text5" xml:space="preserve">
+    <value>Are you sure to continue?</value>
+  </data>
+  <data name="SettingsImportNotice.Text6" xml:space="preserve">
+    <value>Import and overwrite</value>
+  </data>
+  <data name="SettingsImportNotice.Text7" xml:space="preserve">
+    <value>Import failed, unable to open the file dialog.</value>
+  </data>
+  <data name="SettingsImportNotice.Text8" xml:space="preserve">
+    <value>Import failed, invalid data.</value>
+  </data>
+  <data name="SettingsExportNotice.Text2" xml:space="preserve">
+    <value>Export failed, please confirm that the target location is writable, or try again in a different location.</value>
+  </data>
+  <data name="SettingsExportNotice.Text3" xml:space="preserve">
+    <value>Export failed, unable to open the file dialog.</value>
   </data>
   <data name="SettingsImportData.Content" xml:space="preserve">
     <value>Import</value>
@@ -227,5 +257,23 @@
   </data>
   <data name="TagsTip2.Text" xml:space="preserve">
     <value>No matching files</value>
+  </data>
+  <data name="SettingsCountText.Text1" xml:space="preserve">
+    <value>Number of files</value>
+  </data>
+  <data name="SettingsCountText.Text2" xml:space="preserve">
+    <value>Number of tags</value>
+  </data>
+  <data name="SettingsExportData.Content" xml:space="preserve">
+    <value>Export</value>
+  </data>
+  <data name="GlobalNotice.Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="GlobalNotice.Title" xml:space="preserve">
+    <value>Notice</value>
+  </data>
+  <data name="GlobalNotice.Confirm" xml:space="preserve">
+    <value>Confirm</value>
   </data>
 </root>

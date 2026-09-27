@@ -173,8 +173,48 @@
     <value>数据存储于虚拟化路径。</value>
     <comment>设置-备份</comment>
   </data>
-  <data name="SettingsExportData.Content" xml:space="preserve">
-    <value>导出数据</value>
+  <data name="SettingsExportNotice.Text1" xml:space="preserve">
+    <value>导出成功</value>
+    <comment>设置-备份</comment>
+  </data>
+  <data name="SettingsImportNotice.Text1" xml:space="preserve">
+    <value>确认导入</value>
+    <comment>设置-备份</comment>
+  </data>
+  <data name="SettingsImportNotice.Text2" xml:space="preserve">
+    <value>导入成功，数据即将被更新</value>
+    <comment>设置-备份</comment>
+  </data>
+  <data name="SettingsImportNotice.Text3" xml:space="preserve">
+    <value>导入会用所选文件覆盖当前数据，且无法撤销。</value>
+    <comment>设置-备份</comment>
+  </data>
+  <data name="SettingsImportNotice.Text4" xml:space="preserve">
+    <value>所选文件</value>
+    <comment>设置-备份</comment>
+  </data>
+  <data name="SettingsImportNotice.Text5" xml:space="preserve">
+    <value>是否继续？</value>
+    <comment>设置-备份</comment>
+  </data>
+  <data name="SettingsImportNotice.Text6" xml:space="preserve">
+    <value>导入并覆盖</value>
+    <comment>设置-备份</comment>
+  </data>
+  <data name="SettingsImportNotice.Text7" xml:space="preserve">
+    <value>导入失败，无法打开文件对话框。</value>
+    <comment>设置-备份</comment>
+  </data>
+  <data name="SettingsImportNotice.Text8" xml:space="preserve">
+    <value>导入失败，数据无效。</value>
+    <comment>设置-备份</comment>
+  </data>
+  <data name="SettingsExportNotice.Text2" xml:space="preserve">
+    <value>导出失败，请确认目标位置可写，或换一个位置重试。</value>
+    <comment>设置-备份</comment>
+  </data>
+  <data name="SettingsExportNotice.Text3" xml:space="preserve">
+    <value>导出失败，无法打开文件对话框。</value>
     <comment>设置-备份</comment>
   </data>
   <data name="SettingsImportData.Content" xml:space="preserve">
@@ -264,5 +304,29 @@
   <data name="TagsTip2.Text" xml:space="preserve">
     <value>没有匹配的文件</value>
     <comment>标签-空白提示2</comment>
+  </data>
+  <data name="SettingsCountText.Text1" xml:space="preserve">
+    <value>文件数量</value>
+    <comment>设置-统计</comment>
+  </data>
+  <data name="SettingsCountText.Text2" xml:space="preserve">
+    <value>标签数量</value>
+    <comment>设置-统计</comment>
+  </data>
+  <data name="SettingsExportData.Content" xml:space="preserve">
+    <value>导出数据</value>
+    <comment>设置-备份</comment>
+  </data>
+  <data name="GlobalNotice.Cancel" xml:space="preserve">
+    <value>取消</value>
+    <comment>通用对话框-取消</comment>
+  </data>
+  <data name="GlobalNotice.Title" xml:space="preserve">
+    <value>确定</value>
+    <comment>通用对话框-标题</comment>
+  </data>
+  <data name="GlobalNotice.Confirm" xml:space="preserve">
+    <value>提示</value>
+    <comment>通用对话框-标题</comment>
   </data>
 </root>

@@ -43,19 +43,22 @@ namespace Tagmgr
                 _ => 0
             };
             RefreshLanguageCombo();
-
+            var loader = new Windows.ApplicationModel.Resources.ResourceLoader();
             // 数据路径（废弃）
             //DataPathText.Text = DataService.DataFile;
 
             // 统计
-            FileCountText.Text = $"文件记录：{DataService.FileItems.Count} 条";
+            var CountTxt1_1 =loader.GetString("SettingsCountText/Text1");
+            var CountTxt2_1 = loader.GetString("SettingsCountText/Text2");
+            //量词被删了 var CountTxt1_2 =loader.GetString("SettingsCountText/Text2");
+            FileCountText.Text = $"{CountTxt1_1}：{DataService.FileItems.Count}";
 
             var tagCount = DataService.FileItems
                 .SelectMany(f => f.Tags)
                 .Distinct()
                 .Count();
 
-            TagCountText.Text = $"标签数量：{tagCount} 个";
+            TagCountText.Text = $"{CountTxt2_1}：{tagCount}";
         }
 
         // 主题切换
@@ -74,6 +77,10 @@ namespace Tagmgr
         }
         private async void ExportData_Click(object sender, RoutedEventArgs e)
         {
+            var loader = new Windows.ApplicationModel.Resources.ResourceLoader();
+            var ExportTxt1 = loader.GetString("SettingsExportNotice/Text1");
+            var ExportTxt2 = loader.GetString("SettingsExportNotice/Text2");
+            var ExportTxt3 = loader.GetString("SettingsExportNotice/Text3");
             var picker = new FileSavePicker
             {
                 SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
@@ -92,7 +99,7 @@ namespace Tagmgr
             }
             catch (Exception ex)
             {
-                await ShowMessageAsync($"无法打开保存对话框：{ex.Message}");
+                await ShowMessageAsync($"{ExportTxt3}：{ex.Message}");
                 return;
             }
 
@@ -101,14 +108,24 @@ namespace Tagmgr
             var ok = await DataService.ExportAsync(file.Path);
 
             if (ok)
-                await ShowMessageAsync($"已导出到：\n{file.Path}");
+                await ShowMessageAsync($"{ExportTxt1}：\n{file.Path}");
             else
-                await ShowMessageAsync("导出失败。请确认目标位置可写，或换一个位置重试。");
+                await ShowMessageAsync($"{ExportTxt2}");
         }
 
         // 导入数据
         private async void ImportData_Click(object sender, RoutedEventArgs e)
         {
+            var loader = new Windows.ApplicationModel.Resources.ResourceLoader();
+            var ImportTxt1 = loader.GetString("SettingsImportNotice/Text1");
+            var ImportTxt2 = loader.GetString("SettingsImportNotice/Text2");
+            var ImportTxt3 = loader.GetString("SettingsImportNotice/Text3");
+            var ImportTxt4 = loader.GetString("SettingsImportNotice/Text4");
+            var ImportTxt5 = loader.GetString("SettingsImportNotice/Text5");
+            var ImportTxt6 = loader.GetString("SettingsImportNotice/Text6");
+            var ImportTxt7 = loader.GetString("SettingsImportNotice/Text7");
+            var ImportTxt8 = loader.GetString("SettingsImportNotice/Text8");
+            var cancelTxt = loader.GetString("GlobalNotice/Cancel");
             var picker = new FileOpenPicker
             {
                 SuggestedStartLocation = PickerLocationId.DocumentsLibrary
@@ -126,7 +143,7 @@ namespace Tagmgr
             }
             catch (Exception ex)
             {
-                await ShowMessageAsync($"无法打开文件对话框：{ex.Message}");
+                await ShowMessageAsync($"{ImportTxt7}{ex.Message}");
                 return;
             }
 
@@ -135,10 +152,10 @@ namespace Tagmgr
             // 二次确认：导入会覆盖当前数据
             var confirm = new ContentDialog
             {
-                Title = "确认导入",
-                Content = $"导入会用所选文件覆盖当前数据，且无法撤销。\n\n所选文件：\n{file.Path}\n\n是否继续？",
-                PrimaryButtonText = "导入并覆盖",
-                CloseButtonText = "取消",
+                Title = ImportTxt1,
+                Content = $"{ImportTxt3}\n\n{ImportTxt4}：\n{file.Path}\n\n{ImportTxt5}",
+                PrimaryButtonText = ImportTxt6,
+                CloseButtonText = cancelTxt,
                 DefaultButton = ContentDialogButton.Close,
                 XamlRoot = this.XamlRoot
             };
@@ -151,12 +168,11 @@ namespace Tagmgr
             if (ok)
             {
                 RefreshAll();
-                await ShowMessageAsync("导入成功，数据已更新。");
+                await ShowMessageAsync(ImportTxt2);
             }
             else
             {
-                await ShowMessageAsync(
-                    "导入失败。请确认所选文件是有效的 Tagmgr 数据库备份。");
+                await ShowMessageAsync(ImportTxt8);
             }
         }
         private void OpenDataFolder_Click(object sender, RoutedEventArgs e)
@@ -323,11 +339,14 @@ namespace Tagmgr
         }
         private async Task ShowMessageAsync(string message)
         {
+            var loader = new Windows.ApplicationModel.Resources.ResourceLoader();
+            var noticeTitle = loader.GetString("GlobalNotice/Title");
+            var noticeConfirm= loader.GetString("GlobalNotice/Confirm");
             var dialog = new ContentDialog
             {
-                Title = "提示",
+                Title = noticeTitle,
                 Content = message,
-                CloseButtonText = "确定",
+                CloseButtonText = noticeConfirm,
                 XamlRoot = this.XamlRoot
             };
 
