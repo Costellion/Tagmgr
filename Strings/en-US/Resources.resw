@@ -237,6 +237,9 @@
   <data name="SettingsLanguageTip.Text" xml:space="preserve">
     <value>A restart is needed to apply changes.</value>
   </data>
+  <data name="SettingsLanguageSwitch.Text" xml:space="preserve">
+    <value>The language has been changed. Please restart the app.</value>
+  </data>
   <data name="TagsTitle.Text" xml:space="preserve">
     <value>All Tags</value>
   </data>
@@ -275,5 +278,32 @@
   </data>
   <data name="GlobalNotice.Confirm" xml:space="preserve">
     <value>Confirm</value>
+  </data>
+  <data name="SettingsBackupFileType.Text" xml:space="preserve">
+    <value>Tagmgr Backup</value>
+  </data>
+  <data name="SettingsMaintenanceTxt.Nofile" xml:space="preserve">
+    <value>There are no file records.</value>
+  </data>
+  <data name="SettingsMaintenanceTxt.MissingTitle" xml:space="preserve">
+    <value>Missing Files Found</value>
+  </data>
+  <data name="SettingsMaintenanceTxt.MissingContent" xml:space="preserve">
+    <value>Checked {0} file records, {1} of them missing.
+{2}
+Clean these missing records? </value>
+  </data>
+  <data name="SettingsMaintenanceTxt.MoreItems" xml:space="preserve">
+    <value>… and {0} more</value>
+  </data>
+  <data name="SettingsMaintenanceTxt.Clean" xml:space="preserve">
+    <value>Clean</value>
+  </data>
+  <data name="SettingsMaintenanceTxt.AllValid" xml:space="preserve">
+    <value>Check complete.
+Checked {0} file records, all valid.</value>
+  </data>
+  <data name="SettingsMaintenanceTxt.Keep" xml:space="preserve">
+    <value>Keep</value>
   </data>
 </root>

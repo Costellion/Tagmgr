@@ -55,7 +55,7 @@
             <StackPanel Orientation="Horizontal" Spacing="10">
                 <Button x:Uid="SettingsExportData" Click="ExportData_Click"/>
                 <Button x:Uid="SettingsImportData" Click="ImportData_Click"/>
-                <Button x:Uid="SettingsBackupDataFolder" Click="OpenDataFolder_Click"/>
+                <!--<Button x:Uid="SettingsBackupDataFolder" Click="OpenDataFolder_Click"/>-->
             </StackPanel>
             <!-- 语言 -->
             <TextBlock

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net.WebSockets;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -28,12 +29,14 @@ namespace Tagmgr
         public static async Task ShowMessageAsync(XamlRoot root, string message)
         {
             if (root == null) return;
-
+            var loader = new Windows.ApplicationModel.Resources.ResourceLoader();
+            var noticeTitle = loader.GetString("GlobalNotice/Title");
+            var noticeConfirm = loader.GetString("GlobalNotice/Confirm");
             var dialog = new ContentDialog
             {
-                Title = "提示",
+                Title = noticeTitle,
                 Content = message,
-                CloseButtonText = "确定",
+                CloseButtonText = noticeConfirm,
                 XamlRoot = root
             };
 
@@ -43,13 +46,17 @@ namespace Tagmgr
         public static async Task<bool> ShowConfirmAsync(XamlRoot root, string message)
         {
             if (root == null) return false;
-
+            var loader = new Windows.ApplicationModel.Resources.ResourceLoader();
+            var noticeTitle = loader.GetString("GlobalNotice/Title");
+            var noticeConfirm = loader.GetString("GlobalNotice/Confirm");
+            var noticeCancel = loader.GetString("GlobalNotice/Cancel");
             var dialog = new ContentDialog
             {
-                Title = "确认",
+
+                Title = noticeTitle,
                 Content = message,
-                PrimaryButtonText = "确定",
-                CloseButtonText = "取消",
+                PrimaryButtonText = noticeConfirm,
+                CloseButtonText = noticeCancel,
                 DefaultButton = ContentDialogButton.Primary,
                 XamlRoot = root
             };

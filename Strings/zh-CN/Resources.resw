@@ -277,6 +277,10 @@
     <value>更改语言需要重启应用才能生效。</value>
     <comment>设置-语言</comment>
   </data>
+  <data name="SettingsLanguageSwitch.Text" xml:space="preserve">
+    <value>语言已更改，请重启应用。</value>
+    <comment>设置-语言</comment>
+  </data>
   <data name="TagsTitle.Text" xml:space="preserve">
     <value>所有标签</value>
     <comment>标签页标题</comment>
@@ -322,11 +326,46 @@
     <comment>通用对话框-取消</comment>
   </data>
   <data name="GlobalNotice.Title" xml:space="preserve">
-    <value>确定</value>
+    <value>提示</value>
     <comment>通用对话框-标题</comment>
   </data>
   <data name="GlobalNotice.Confirm" xml:space="preserve">
-    <value>提示</value>
-    <comment>通用对话框-标题</comment>
+    <value>确认</value>
+    <comment>通用对话框-确认</comment>
+  </data>
+  <data name="SettingsBackupFileType.Text" xml:space="preserve">
+    <value>Tagmgr 备份</value>
+    <comment>设置-备份文件名</comment>
+  </data>
+  <data name="SettingsMaintenanceTxt.Nofile" xml:space="preserve">
+    <value>当前没有任何文件记录。</value>
+    <comment>设置-维护</comment>
+  </data>
+  <data name="SettingsMaintenanceTxt.MissingTitle" xml:space="preserve">
+    <value>发现失效文件</value>
+    <comment>设置-维护</comment>
+  </data>
+  <data name="SettingsMaintenanceTxt.MissingContent" xml:space="preserve">
+    <value>共检查 {0} 个文件记录，其中 {1} 个文件已失效。
+{2}
+是否清理这些失效记录？</value>
+    <comment>设置-维护</comment>
+  </data>
+  <data name="SettingsMaintenanceTxt.MoreItems" xml:space="preserve">
+    <value>… 以及另外 {0} 个</value>
+    <comment>设置-维护</comment>
+  </data>
+  <data name="SettingsMaintenanceTxt.Clean" xml:space="preserve">
+    <value>清除</value>
+    <comment>设置-维护</comment>
+  </data>
+  <data name="SettingsMaintenanceTxt.AllValid" xml:space="preserve">
+    <value>检查完成。
+共检查 {0} 个文件记录，全部有效。</value>
+    <comment>设置-维护</comment>
+  </data>
+  <data name="SettingsMaintenanceTxt.Keep" xml:space="preserve">
+    <value>保留</value>
+    <comment>设置-维护</comment>
   </data>
 </root>

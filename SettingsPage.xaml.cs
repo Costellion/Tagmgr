@@ -86,8 +86,8 @@ namespace Tagmgr
                 SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
                 SuggestedFileName = $"tagmgr-backup-{DateTime.Now:yyyyMMdd-HHmm}"
             };
-            picker.FileTypeChoices.Add("Tagmgr 备份", new List<string> { ".db" });
-
+            var backupType = loader.GetString("SettingsBackupFileType/Text");
+            picker.FileTypeChoices.Add(backupType, new List<string> { ".db" });
             var mainWindow = ((App)Application.Current).MainWindow!;
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(mainWindow);
             WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
@@ -99,7 +99,7 @@ namespace Tagmgr
             }
             catch (Exception ex)
             {
-                await ShowMessageAsync($"{ExportTxt3}：{ex.Message}");
+                await UiService.ShowMessageAsync(this.XamlRoot, $"{ExportTxt3}：{ex.Message}");
                 return;
             }
 
@@ -108,9 +108,9 @@ namespace Tagmgr
             var ok = await DataService.ExportAsync(file.Path);
 
             if (ok)
-                await ShowMessageAsync($"{ExportTxt1}：\n{file.Path}");
+                await UiService.ShowMessageAsync(this.XamlRoot, $"{ExportTxt1}：\n{file.Path}");
             else
-                await ShowMessageAsync($"{ExportTxt2}");
+                await UiService.ShowMessageAsync(this.XamlRoot, $"{ExportTxt2}");
         }
 
         // 导入数据
@@ -143,7 +143,7 @@ namespace Tagmgr
             }
             catch (Exception ex)
             {
-                await ShowMessageAsync($"{ImportTxt7}{ex.Message}");
+                await UiService.ShowMessageAsync(this.XamlRoot, $"{ImportTxt7}{ex.Message}");
                 return;
             }
 
@@ -168,13 +168,14 @@ namespace Tagmgr
             if (ok)
             {
                 RefreshAll();
-                await ShowMessageAsync(ImportTxt2);
+                await UiService.ShowMessageAsync(this.XamlRoot, ImportTxt2);
             }
             else
             {
-                await ShowMessageAsync(ImportTxt8);
+                await UiService.ShowMessageAsync(this.XamlRoot, ImportTxt8);
             }
         }
+        /* 由于 UWP 沙箱限制，无法直接打开应用数据文件夹，因此暂时禁用此功能
         private void OpenDataFolder_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -191,17 +192,27 @@ namespace Tagmgr
             }
             catch (Exception ex)
             {
-                _ = ShowMessageAsync($"无法打开文件夹：{ex.Message}");
+                _ = UiService.ShowMessageAsync(this.XamlRoot, $"无法打开文件夹：{ex.Message}");
             }
-        }
+        }*/
         private async void CheckFiles_Click(object sender, RoutedEventArgs e)
         {
+            var loader = new Windows.ApplicationModel.Resources.ResourceLoader();
+
+            var NoFileTxt = loader.GetString("SettingsMaintenanceTxt/Nofile");
+            var AllValidTxt = loader.GetString("SettingsMaintenanceTxt/AllValid");
+            var MoreItemsTxt = loader.GetString("SettingsMaintenanceTxt/MoreItems");
+            var MissTitleTxt = loader.GetString("SettingsMaintenanceTxt/MissingTitle");
+            var MissBodyTxt = loader.GetString("SettingsMaintenanceTxt/MissingContent");
+            var CleanTxt = loader.GetString("SettingsMaintenanceTxt/Clean");
+            var KeepTxt = loader.GetString("SettingsMaintenanceTxt/Keep");
+
             if (CheckFilesButton.IsEnabled == false) return;
 
             var total = DataService.FileItems.Count;
             if (total == 0)
             {
-                await ShowMessageAsync("当前没有任何文件记录。");
+                await UiService.ShowMessageAsync(this.XamlRoot, NoFileTxt);
                 return;
             }
 
@@ -241,28 +252,21 @@ namespace Tagmgr
 
                 if (missing.Count == 0)
                 {
-                    await ShowMessageAsync(
-                        $"检查完成。\n\n共检查 {total} 个文件记录，全部有效。");
+                    await UiService.ShowMessageAsync(this.XamlRoot, string.Format(AllValidTxt, total));
                     return;
                 }
 
                 // 预览前 10 个失效文件
-                var preview = string.Join(
-                    "\n",
-                    missing.Take(10).Select(f => "· " + f.FileName));
-
+                var preview = string.Join("\n", missing.Take(10).Select(f => "· " + f.FileName));
                 if (missing.Count > 10)
-                    preview += $"\n… 以及另外 {missing.Count - 10} 个";
+                    preview += "\n" + string.Format(MoreItemsTxt, missing.Count - 10);
 
                 var dialog = new ContentDialog
                 {
-                    Title = "发现失效文件",
-                    Content =
-                        $"共检查 {total} 个文件记录，其中 {missing.Count} 个文件已失效。\n\n" +
-                        $"{preview}\n\n" +
-                        "是否清理这些失效记录？清理不会删除磁盘上的任何文件，且可以撤销。",
-                    PrimaryButtonText = $"清理 {missing.Count} 条记录",
-                    CloseButtonText = "保留",
+                    Title = MissTitleTxt,
+                    Content = string.Format(MissBodyTxt, total, missing.Count, preview),
+                    PrimaryButtonText = string.Format(CleanTxt, missing.Count),
+                    CloseButtonText = KeepTxt,
                     DefaultButton = ContentDialogButton.Close,
                     XamlRoot = this.XamlRoot
                 };
@@ -317,40 +321,9 @@ namespace Tagmgr
 
             // 没变化就不处理
             if (newLang == AppSettings.Language) return;
-
             AppSettings.Language = newLang;
-
-            var dialog = new ContentDialog
-            {
-                Title = "语言已更改",
-                Content = "重启应用后生效。是否立即重启？",
-                PrimaryButtonText = "立即重启",
-                CloseButtonText = "稍后",
-                DefaultButton = ContentDialogButton.Primary,
-                XamlRoot = this.XamlRoot
-            };
-
-            var result = await dialog.ShowAsync();
-
-            if (result == ContentDialogResult.Primary)
-            {
-                Microsoft.Windows.AppLifecycle.AppInstance.Restart("");
-            }
-        }
-        private async Task ShowMessageAsync(string message)
-        {
             var loader = new Windows.ApplicationModel.Resources.ResourceLoader();
-            var noticeTitle = loader.GetString("GlobalNotice/Title");
-            var noticeConfirm= loader.GetString("GlobalNotice/Confirm");
-            var dialog = new ContentDialog
-            {
-                Title = noticeTitle,
-                Content = message,
-                CloseButtonText = noticeConfirm,
-                XamlRoot = this.XamlRoot
-            };
-
-            await dialog.ShowAsync();
+            await UiService.ShowMessageAsync(XamlRoot, loader.GetString("SettingsLanguageSwitch/Text"));
         }
     }
 }
